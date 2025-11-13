@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📚 Stats Cheatsheet - Student Guide</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        .test-card {
+            scroll-margin-top: 100px;
+        }
+        .sticky-nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        .emoji-header {
+            font-size: 2.5rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <!-- Sticky Navigation -->
+    <div class="sticky-nav bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between mb-2">
+                <h1 class="text-2xl font-bold">📚 Stats Cheatsheet</h1>
+                <a href="index.html" class="bg-white text-amber-600 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition text-sm">
+                    ← Back to Calculators
+                </a>
+            </div>
+            <p class="text-amber-100 text-sm">Your friendly guide to statistical tests for marketing research</p>
+        </div>
+    </div>
+
+    <!-- Quick Nav -->
+    <div class="bg-white border-b sticky" style="top: 76px; z-index: 40;">
+        <div class="max-w-7xl mx-auto px-4 py-3">
+            <div class="flex gap-2 overflow-x-auto text-sm">
+                <a href="#ttest" class="px-3 py-1 bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200 whitespace-nowrap">T-Test</a>
+                <a href="#anova" class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200 whitespace-nowrap">ANOVA</a>
+                <a href="#chi" class="px-3 py-1 bg-green-100 text-green-700 rounded-full hover:bg-green-200 whitespace-nowrap">Chi-Square</a>
+                <a href="#correlation" class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full hover:bg-yellow-200 whitespace-nowrap">Correlation</a>
+                <a href="#regression" class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full hover:bg-orange-200 whitespace-nowrap">Regression</a>
+                <a href="#mann" class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full hover:bg-indigo-200 whitespace-nowrap">Mann-Whitney</a>
+                <a href="#proportions" class="px-3 py-1 bg-cyan-100 text-cyan-700 rounded-full hover:bg-cyan-200 whitespace-nowrap">Proportions</a>
+                <a href="#bayesian" class="px-3 py-1 bg-violet-100 text-violet-700 rounded-full hover:bg-violet-200 whitespace-nowrap">Bayesian</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 py-8">
+
+        <!-- Intro Section -->
+        <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg shadow-md p-8 mb-8 border-2 border-amber-200">
+            <h2 class="text-3xl font-bold mb-4 text-amber-900">Welcome to Your Stats Survival Guide! 🎉</h2>
+            <p class="text-lg text-gray-700 mb-4">
+                Let's be real: statistics can feel like learning a new language. But here's the secret — you don't need to memorize formulas or become a math wizard. You just need to know <strong>which test to use when</strong> and <strong>how to read the results</strong>.
+            </p>
+            <p class="text-lg text-gray-700 mb-4">
+                This guide is written in plain English (mostly!), with real marketing examples you'll actually encounter. Think of it as your stats translator.
+            </p>
+            <div class="bg-white rounded-lg p-4 mt-4">
+                <h3 class="font-bold text-gray-800 mb-2">🎯 Quick Decision Tree:</h3>
+                <ul class="text-sm text-gray-700 space-y-1">
+                    <li><strong>Comparing 2 groups?</strong> → T-Test</li>
+                    <li><strong>Comparing 3+ groups?</strong> → ANOVA</li>
+                    <li><strong>Looking at categories?</strong> → Chi-Square</li>
+                    <li><strong>Predicting outcomes?</strong> → Regression</li>
+                    <li><strong>Measuring relationships?</strong> → Correlation</li>
+                    <li><strong>Comparing percentages?</strong> → Z-Test for Proportions</li>
+                    <li><strong>Weird/skewed data?</strong> → Mann-Whitney (non-parametric)</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- T-TEST -->
+        <div id="ttest" class="test-card bg-white rounded-lg shadow-lg p-8 mb-8 border-t-4 border-purple-500">
+            <div class="emoji-header mb-4">📊</div>
+            <h2 class="text-3xl font-bold mb-4 text-purple-700">T-Test</h2>
+            <p class="text-xl text-gray-600 mb-6 italic">"The classic comparison tool"</p>
+
+            <div class="bg-purple-50 rounded-lg p-6 mb-6">
+                <h3 class="font-bold text-lg mb-3 text-purple-900">What is it?</h3>
+                <p class="text-gray-700">
+                    The t-test compares the <strong>average</strong> (mean) between two groups to see if they're statistically different.
+                    It's like asking: "Is Version A really better than Version B, or did I just get lucky?"
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6 mb-6">
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h4 class="font-bold text-gray-800 mb-3">When to Use It:</h4>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li>✓ Comparing <strong>2 groups</strong> (and only 2!)</li>
+                        <li>✓ Your data is <strong>continuous</strong> (numbers like prices, time, ratings)</li>
+                        <li>✓ Data is roughly <strong>normal-ish</strong> (bell curve-ish)</li>
+                        <li>✓ You want to compare <strong>means</strong></li>
+                    </ul>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h4 class="font-bold text-gray-800 mb-3">Three Flavors:</h4>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li><strong>Independent:</strong> Two separate groups (Ad A vs Ad B)</li>
+                        <li><strong>Paired:</strong> Same group, before/after (Pre-campaign vs Post-campaign)</li>
+                        <li><strong>One-Sample:</strong> Your group vs a known value (Your NPS vs industry average of 50)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 rounded-lg p-6 mb-6">
+                <h4 class="font-bold text-blue-900 mb-3">🎬 Real Example:</h4>
+                <p class="text-gray-700 mb-3">
+                    <strong>Scenario:</strong> You're testing two email subject lines for your Black Friday campaign.
+                </p>
+                <ul class="text-sm text-gray-700 space-y-1 mb-3">
+                    <li>• <strong>Subject A:</strong> "50% Off Everything!" → sent to 1,000 people → avg. order value: $85</li>
+                    <li>• <strong>Subject B:</strong> "Last Chance: Huge Savings!" → sent to 1,000 people → avg. order value: $92</li>
+                </ul>
+                <p class="text-gray-700 font-medium">
+                    <strong>Question:</strong> Is that $7 difference real, or just random luck?
+                </p>
+                <p class="text-gray-700 mt-2">
+                    <strong>Answer:</strong> Run an independent t-test! If p < 0.05, Subject B is legitimately better. 🎉
+                </p>
+            </div>
+
+            <div class="bg-green-50 rounded-lg p-6 mb-6">
+                <h4 class="font-bold text-green-900 mb-3">📖 How to Read Results:</h4>
+                <div class="space-y-3 text-sm">
+                    <div>
+                        <span class="font-bold">t-statistic:</span>
+                        <span class="text-gray-700"> How many "standard errors" apart the groups are. Bigger = more different.</span>
+                    </div>
+                    <div>
+                        <span class="font-bold">p-value:</span>
+                        <span class="text-gray-700"> If p < 0.05, the difference is "statistically significant" (probably not random).</span>
+                    </div>
+                    <div>
+                        <span class="font-bold">Cohen's d (effect size):</span>
+                        <span class="text-gray-700"> How BIG is the difference? < 0.5 = small, 0.5-0.8 = medium, > 0.8 = large.</span>
+                    </div>
+                    <div>
+                        <span class="font-bold">95% Confidence Interval:</span>
+                        <span class="text-gray-700"> "We're 95% sure the true difference is between X and Y."</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-red-50 rounded-lg p-6">
+                <h4 class="font-bold text-red-900 mb-3">⚠️ Watch Out For:</h4>
+                <ul class="text-sm text-gray-700 space-y-1">
+                    <li>• <strong>Only works for 2 groups</strong> — if you have 3+, use ANOVA instead!</li>
+                    <li>• Needs <strong>decent sample sizes</strong> (at least 30 per group is safer)</li>
+                    <li>• Assumes data is <strong>roughly normal</strong> (not super skewed)</li>
+                    <li>• <strong>Statistical significance ≠ practical importance!</strong> A difference can be "significant" but tiny and meaningless for business.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ANOVA -->
+        <div id="anova" class="test-card bg-white rounded-lg shadow-lg p-8 mb-8 border-t-4 border-blue-500">
+            <div class="emoji-header mb-4">🎯</div>
+            <h2 class="text-3xl font-bold mb-4 text-blue-700">ANOVA</h2>
+            <p class="text-xl text-gray-600 mb-6 italic">"T-test's big brother for multiple groups"</p>
+
+            <div class="bg-blue-50 rounded-lg p-6 mb-6">
+                <h3 class="font-bold text-lg mb-3 text-blue-900">What is it?</h3>
+                <p class="text-gray-700">
+                    ANOVA (Analysis of Variance) compares means across <strong>3 or more groups</strong>.
+                    It tells you: "Is at least one group different from the others?" Think of it as a t-test on steroids.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6 mb-6">
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h4 class="font-bold text-gray-800 mb-3">When to Use It:</h4>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li>✓ Comparing <strong>3+ groups</strong></li>
+                        <li>✓ Continuous outcome variable (sales, satisfaction, etc.)</li>
+                        <li>✓ Want to know if <strong>any</strong> groups differ</li>
+                        <li>✓ All groups have similar variance</li>
+                    </ul>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h4 class="font-bold text-gray-800 mb-3">Two Types:</h4>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li><strong>One-Way ANOVA:</strong> One factor (e.g., comparing 3 ad designs)</li>
+                        <li><strong>Two-Way ANOVA:</strong> Two factors at once (e.g., ad design × time of day)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 rounded-lg p-6 mb-6">
+                <h4 class="font-bold text-blue-900 mb-3">🎬 Real Example:</h4>
+                <p class="text-gray-700 mb-3">
+                    <strong>Scenario:</strong> You're testing 4 different promotional strategies for your loyalty program:
+                </p>
+                <ul class="text-sm text-gray-700 space-y-1 mb-3">
+                    <li>• <strong>Strategy A:</strong> 10% discount → avg. new signups: 45/week</li>
+                    <li>• <strong>Strategy B:</strong> Free shipping → avg. new signups: 52/week</li>
+                    <li>• <strong>Strategy C:</strong> Points multiplier → avg. new signups: 61/week</li>
+                    <li>• <strong>Strategy D:</strong> Exclusive access → avg. new signups: 48/week</li>
+                </ul>
+                <p class="text-gray-700 font-medium">
+                    <strong>Question:</strong> Are these differences real or random noise?
+                </p>
+                <p class="text-gray-700 mt-2">
+                    <strong>Answer:</strong> Run one-way ANOVA! If F-statistic is significant (p < 0.05), at least one strategy works differently.
+                </p>
+            </div>
+
+            <div class="bg-green-50 rounded-lg p-6 mb-6">
+                <h4 class="font-bold text-green-900 mb-3">📖 How to Read Results:</h4>
+                <div class="space-y-3 text-sm">
+                    <div>
+                        <span class="font-bold">F-statistic:</span>
+                        <span class="text-gray-700"> Ratio of between-group variance to within-group variance. Bigger = groups differ more.</span>
+                    </div>
+                    <div>
+                        <span class="font-bold">p-value:</span>
+                        <span class="text-gray-700"> If p < 0.05, at least one group is significantly different (but doesn't tell you which one!).</span>
+                    </div>
+                    <div>
+                        <span class="font-bold">Eta-squared (η²):</span>
+                        <span class="text-gray-700"> Effect size. Shows % of variance explained by groups. 0.01 = small, 0.06 = medium, 0.14+ = large.</span>
+                    </div>
+                    <div class="bg-yellow-100 p-3 rounded">
+                        <span class="font-bold text-yellow-900">🔍 Pro Tip:</span>
+                        <span class="text-gray-700"> ANOVA only tells you "something is different" — you need post-hoc tests (like Tukey's HSD) to figure out WHICH groups differ!</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-red-50 rounded-lg p-6">
+                <h4 class="font-bold text-red-900 mb-3">⚠️ Watch Out For:</h4>
+                <ul class="text-sm text-gray-700 space-y-1">
+                    <li>• <strong>ANOVA doesn't tell you WHICH groups differ</strong> — only that at least one does!</li>
+                    <li>• Assumes <strong>equal variances</strong> across groups (Levene's test can check this)</li>
+                    <li>• More sensitive to <strong>outliers</strong> than t-tests</li>
+                    <li>• With many groups, you increase the chance of <strong>false positives</strong> (Type I error)</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- CHI-SQUARE -->
+        <div id="chi" class="test-card bg-white rounded-lg shadow-lg p-8 mb-8 border-t-4 border-green-500">
+            <div class="emoji-header mb-4">🎲</div>
+            <h2 class="text-3xl font-bold mb-4 text-green-700">Chi-Square Test</h2>
+            <p class="text-xl text-gray-600 mb-6 italic">"For when you're counting categories"</p>
+
+            <div class="bg-green-50 rounded-lg p-6 mb-6">
+                <h3 class="font-bold text-lg mb-3 text-green-900">What is it?</h3>
+                <p class="text-gray-700">
+                    Chi-square tests relationships between <strong>categorical variables</strong> (groups, types, categories).
+                    It's all about <strong>counts</strong> — not averages! Think: "Do men and women prefer different products?"
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6 mb-6">
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h4 class="font-bold text-gray-800 mb-3">When to Use It:</h4>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li>✓ Comparing <strong>categories</strong> (not numbers)</li>
+                        <li>✓ Data is <strong>frequency counts</strong> (how many in each group)</li>
+                        <li>✓ Want to test <strong>independence</strong> or <strong>goodness of fit</strong></li>
+                        <li>✓ Each cell has at least 5 expected observations</li>
+                    </ul>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h4 class="font-bold text-gray-800 mb-3">Two Flavors:</h4>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li><strong>Goodness of Fit:</strong> Does your data match expected distribution?</li>
+                        <li><strong>Test of Independence:</strong> Are two categorical variables related?</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 rounded-lg p-6 mb-6">
+                <h4 class="font-bold text-blue-900 mb-3">🎬 Real Example:</h4>
+                <p class="text-gray-700 mb-3">
+                    <strong>Scenario:</strong> You want to know if customer age group affects product preference.
+                </p>
+                <div class="overflow-x-auto mb-3">
+                    <table class="min-w-full text-sm border">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border p-2">Age Group</th>
+                                <th class="border p-2">Product A</th>
+                                <th class="border p-2">Product B</th>
+                                <th class="border p-2">Product C</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="border p-2 font-medium">18-25</td>
+                                <td class="border p-2">120</td>
+                                <td class="border p-2">45</td>
+                                <td class="border p-2">35</td>
+                            </tr>
+                            <tr>
+                                <td class="border p-2 font-medium">26-40</td>
+                                <td class="border p-2">85</td>
+                                <td class="border p-2">110</td>
+                                <td class="border p-2">55</td>
+                            </tr>
+                            <tr>
+                                <td class="border p-2 font-medium">41+</td>
+                                <td class="border p-2">40</td>
+                                <td class="border p-2">75</td>
+                                <td class="border p-2">90</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-gray-700 font-medium">
+                    <strong>Question:</strong> Is product choice independent of age, or are they related?
+                </p>
+                <p class="text-gray-700 mt-2">
+                    <strong>Answer:</strong> Chi-square test of independence! If p < 0.05, age and product preference ARE related.
+                </p>
+            </div>
+
+            <div class="bg-green-50 rounded-lg p-6 mb-6">
+                <h4 class="font-bold text-green-900 mb-3">📖 How to Read Results:</h4>
+                <div class="space-y-3 text-sm">
+                    <div>
+                        <span class="font-bold">χ² (Chi-square value):</span>
+                        <span class="text-gray-700"> How much observed counts differ from expected. Bigger = more association.</span>
+                    </div>
+                    <div>
+                        <span class="font-bold">p-value:</span>
+                        <span class="text-gray-700"> If p < 0.05, the variables are significantly related (not independent).</span>
+                    </div>
+                    <div>
+                        <span class="font-bold">Cramér's V (effect size):</span>
+                        <span class="text-gray-700"> Strength of association. 0-0.1 = weak, 0.1-0.3 = moderate, 0.3+ = strong.</span>
+                    </div>
+                    <div>
+                        <span class="font-bold">Degrees of freedom (df):</span>
+                        <span class="text-gray-700"> Calculated as (rows - 1) × (columns - 1). Just needed for looking up critical values.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-red-50 rounded-lg p-6">
+                <h4 class="font-bold text-red-900 mb-3">⚠️ Watch Out For:</h4>
+                <ul class="text-sm text-gray-700 space-y-1">
+                    <li>• <strong>Only for categorical data</strong> — can't use it on continuous variables!</li>
+                    <li>• Needs <strong>at least 5 expected observations</strong> in each cell (use Fisher's exact test if cells are small)</li>
+                    <li>• <strong>Doesn't show direction</strong> — tells you IF there's a relationship, not HOW variables relate</li>
+                    <li>• <strong>Sensitive to sample size</strong> — huge samples make even tiny differences "significant"</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- CORRELATION -->
+        <div id="correlation" class="test-card bg-white rounded-lg shadow-lg p-8 mb-8 border-t-4 border-yellow-500">
+            <div class="emoji-header mb-4">🔗</div>
+            <h2 class="text-3xl font-bold mb-4 text-yellow-700">Correlation</h2>
+            <p class="text-xl text-gray-600 mb-6 italic">"Measuring how things move together"</p>
+
+            <div class="bg-yellow-50 rounded-lg p-6 mb-6">
+                <h3 class="font-bold text-lg mb-3 text-yellow-900">What is it?</h3>
+                <p class="text-gray-700">
+                    Correlation measures the <strong>strength and direction</strong> of the relationship between two continuous variables.
+                    Key word: <strong>relationship</strong>, not causation! Just because two things correlate doesn't mean one causes the other.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6 mb-6">
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h4 class="font-bold text-gray-800 mb-3">When to Use It:</h4>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li>✓ Both variables are <strong>continuous</strong> (numbers)</li>
+                        <li>✓ Want to know if two things are <strong>related</strong></li>
+                        <li>✓ Not trying to predict one from the other (that's regression)</li>
+                        <li>✓ Relationship is roughly <strong>linear</strong> (straight line-ish)</li>
+                    </ul>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h4 class="font-bold text-gray-800 mb-3">The r Value:</h4>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li><strong>r = +1:</strong> Perfect positive correlation (as X ↑, Y ↑)</li>
+                        <li><strong>r = 0:</strong> No correlation (no relationship)</li>
+                        <li><strong>r = -1:</strong> Perfect negative correlation (as X ↑, Y ↓)</li>
+                        <li><strong>|r| > 0.7:</strong> Strong correlation</li>
+                        <li><strong>|r| = 0.3-0.7:</strong> Moderate correlation</li>
+                        <li><strong>|r| < 0.3:</strong> Weak correlation</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 rounded-lg p-6 mb-6">
+                <h4 class="font-bold text-blue-900 mb-3">🎬 Real Example:</h4>
+                <p class="text-gray-700 mb-3">
+                    <strong>Scenario:</strong> You suspect that your advertising spend and sales revenue are related.
+                </p>
+                <ul class="text-sm text-gray-700 space-y-1 mb-3">
+                    <li>• Collect data for 12 months</li>
+                    <li>• X-axis: Monthly ad spend ($1K, $2K, $3K, etc.)</li>
+                    <li>• Y-axis: Monthly sales revenue</li>
+                </ul>
+                <p class="text-gray-700 font-medium">
+                    <strong>Question:</strong> Is there a relationship between ad spend and sales?
+                </p>
+                <p class="text-gray-700 mt-2">
+                    <strong>Answer:</strong> Calculate Pearson's r! If r = 0.85 (strong positive), more ad spend is associated with higher sales.
+                    If p < 0.05, the correlation is statistically significant (not due to chance).
+                </p>
+            </div>
+
+            <div class="bg-green-50 rounded-lg p-6 mb-6">
+                <h4 class="font-bold text-green-900 mb-3">📖 How to Read Results:</h4>
+                <div class="space-y-3 text-sm">
+                    <div>
+                        <span class="font-bold">r (Pearson's correlation):</span>
+                        <span class="text-gray-700"> Ranges from -1 to +1. Sign shows direction, magnitude shows strength.</span>
+                    </div>
+                    <div>
+                        <span class="font-bold">r² (R-squared):</span>
+                        <span class="text-gray-700"> % of variance in Y explained by X. If r = 0.8, then r² = 0.64 = 64% explained.</span>
+                    </div>
+                    <div>
+                        <span class="font-bold">p-value:</span>
+                        <span class="text-gray-700"> If p < 0.05, the correlation is "real" (not random noise).</span>
+                    </div>
+                    <div class="bg-yellow-100 p-3 rounded">
+                        <span class="font-bold text-yellow-900">🚨 BIG WARNING:</span>
+                        <span class="text-gray-700"> <strong>Correlation ≠ Causation!</strong> Just because ice cream sales and drowning rates correlate doesn't mean ice cream causes drowning. (Both increase in summer!)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-red-50 rounded-lg p-6">
+                <h4 class="font-bold text-red-900 mb-3">⚠️ Watch Out For:</h4>
+                <ul class="text-sm text-gray-700 space-y-1">
+                    <li>• <strong>Correlation DOES NOT imply causation!</strong> (Can't say this enough!)</li>
+                    <li>• <strong>Outliers</strong> can dramatically affect r</li>
+                    <li>• Only measures <strong>linear</strong> relationships (misses curves)</li>
+                    <li>• <strong>Spurious correlations</strong> are everywhere — always ask "does this make sense?"</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- REGRESSION -->
+        <div id="regression" class="test-card bg-white rounded-lg shadow-lg p-8 mb-8 border-t-4 border-orange-500">
+            <div class="emoji-header mb-4">📈</div>
+            <h2 class="text-3xl font-bold mb-4 text-orange-700">Regression</h2>
+            <p class="text-xl text-gray-600 mb-6 italic">"Predicting the future (sort of)"</p>
+
+            <div class="bg-orange-50 rounded-lg p-6 mb-6">
+                <h3 class="font-bold text-lg mb-3 text-orange-900">What is it?</h3>
+                <p class="text-gray-700">
+                    Regression lets you <strong>predict</strong> one variable from another. It's like correlation's practical cousin.
+                    Instead of just saying "these are related," regression says "if X increases by 1, Y will increase by [this much]."
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6 mb-6">
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h4 class="font-bold text-gray-800 mb-3">When to Use It:</h4>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li>✓ Want to <strong>predict</strong> an outcome (Y) from predictors (X)</li>
+                        <li>✓ Both variables are <strong>continuous</strong></li>
+                        <li>✓ Relationship is roughly <strong>linear</strong></li>
+                        <li>✓ Need to quantify <strong>how much</strong> X affects Y</li>
+                    </ul>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h4 class="font-bold text-gray-800 mb-3">The Equation:</h4>
+                    <div class="bg-white p-3 rounded font-mono text-sm">
+                        Y = b₀ + b₁(X)
+                    </div>
+                    <ul class="space-y-1 text-sm text-gray-700 mt-2">
+                        <li><strong>Y:</strong> What you're predicting (dependent variable)</li>
+                        <li><strong>X:</strong> What you're using to predict (independent variable)</li>
+                        <li><strong>b₀:</strong> Intercept (Y when X = 0)</li>
+                        <li><strong>b₁:</strong> Slope (change in Y for each 1-unit increase in X)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 rounded-lg p-6 mb-6">
+                <h4 class="font-bold text-blue-900 mb-3">🎬 Real Example:</h4>
+                <p class="text-gray-700 mb-3">
+                    <strong>Scenario:</strong> You want to predict monthly sales based on your Facebook ad spend.
+                </p>
+                <ul class="text-sm text-gray-700 space-y-1 mb-3">
+                    <li>• Collected 10 months of data</li>
+                    <li>• Run regression: Sales = $5,000 + $4.50(Ad Spend)</li>
+                </ul>
+                <p class="text-gray-700 font-medium mb-2">
+                    <strong>What this means:</strong>
+                </p>
+                <ul class="text-sm text-gray-700 space-y-1 mb-3">
+                    <li>• <strong>Intercept ($5,000):</strong> Base sales with zero ad spend</li>
+                    <li>• <strong>Slope ($4.50):</strong> For every $1 spent on ads, sales increase by $4.50</li>
+                </ul>
+                <p class="text-gray-700 mt-2">
+                    <strong>Prediction:</strong> If you spend $1,000 on ads → Expected sales = $5,000 + $4.50(1,000) = <strong>$9,500</strong>
+                </p>
+            </div>
+
+            <div class="bg-green-50 rounded-lg p-6 mb-6">
+                <h4 class="font-bold text-green-900 mb-3">📖 How to Read Results:</h4>
+                <div class="space-y-3 text-sm">
+                    <div>
+                        <span class="font-bold">Slope (b₁):</span>
+                        <span class="text-gray-700"> The "bang for your buck." How much Y changes for each unit of X.</span>
+                    </div>
+                    <div>
+                        <span class="font-bold">R² (R-squared):</span>
+                        <span class="text-gray-700"> % of variance explained by the model. 0.75 = model explains 75% of variation in Y.</span>
+                    </div>
+                    <div>
+                        <span class="font-bold">p-value for slope:</span>
+                        <span class="text-gray-700"> If p < 0.05, X is a significant predictor of Y.</span>
+                    </div>
+                    <div>
+                        <span class="font-bold">Standard error:</span>
+                        <span class="text-gray-700"> How much predictions typically miss by. Lower = better predictions.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-red-50 rounded-lg p-6">
+                <h4 class="font-bold text-red-900 mb-3">⚠️ Watch Out For:</h4>
+                <ul class="text-sm text-gray-700 space-y-1">
+                    <li>• <strong>Don't extrapolate beyond your data!</strong> Model breaks down outside observed range.</li>
+                    <li>• <strong>Outliers</strong> can throw off the entire line</li>
+                    <li>• Just because model is significant doesn't mean it's <strong>useful</strong> (check R²!)</li>
+                    <li>• <strong>Correlation ≠ Causation</strong> still applies! Regression doesn't prove X causes Y.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- MANN-WHITNEY -->
+        <div id="mann" class="test-card bg-white rounded-lg shadow-lg p-8 mb-8 border-t-4 border-indigo-500">
+            <div class="emoji-header mb-4">🔀</div>
+            <h2 class="text-3xl font-bold mb-4 text-indigo-700">Mann-Whitney U Test</h2>
+            <p class="text-xl text-gray-600 mb-6 italic">"When your data is weird"</p>
+
+            <div class="bg-indigo-50 rounded-lg p-6 mb-6">
+                <h3 class="font-bold text-lg mb-3 text-indigo-900">What is it?</h3>
+                <p class="text-gray-700">
+                    The Mann-Whitney U test is the <strong>non-parametric</strong> alternative to the t-test.
+                    It compares <strong>medians</strong> instead of means, and it works when your data is <strong>skewed, has outliers, or isn't normal</strong>.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6 mb-6">
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h4 class="font-bold text-gray-800 mb-3">When to Use It:</h4>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li>✓ Comparing <strong>2 independent groups</strong></li>
+                        <li>✓ Data is <strong>skewed</strong> or has <strong>outliers</strong></li>
+                        <li>✓ Data is <strong>ordinal</strong> (rankings, Likert scales)</li>
+                        <li>✓ Sample sizes are <strong>small</strong></li>
+                        <li>✓ T-test assumptions are violated</li>
+                    </ul>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h4 class="font-bold text-gray-800 mb-3">Key Difference from T-Test:</h4>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li><strong>T-test:</strong> Compares <em>means</em>, assumes normal distribution</li>
+                        <li><strong>Mann-Whitney:</strong> Compares <em>distributions/ranks</em>, no normality assumption</li>
+                        <li>Think of it as: "Does one group tend to have higher values than the other?"</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 rounded-lg p-6 mb-6">
+                <h4 class="font-bold text-blue-900 mb-3">🎬 Real Example:</h4>
+                <p class="text-gray-700 mb-3">
+                    <strong>Scenario:</strong> You're comparing customer satisfaction ratings (1-5 stars) between two store locations.
+                </p>
+                <ul class="text-sm text-gray-700 space-y-1 mb-3">
+                    <li>• <strong>Store A:</strong> Mostly 3-4 stars, few outliers at 1 star</li>
+                    <li>• <strong>Store B:</strong> More consistent 4-5 stars</li>
+                    <li>• Data is <strong>ordinal</strong> (Likert scale) and <strong>skewed</strong></li>
+                </ul>
+                <p class="text-gray-700 font-medium">
+                    <strong>Question:</strong> Is Store B significantly better?
+                </p>
+                <p class="text-gray-700 mt-2">
+                    <strong>Answer:</strong> Use Mann-Whitney U test instead of t-test! It's better suited for ordinal, non-normal data.
+                    If p < 0.05, Store B has significantly higher ratings.
+                </p>
+            </div>
+
+            <div class="bg-green-50 rounded-lg p-6 mb-6">
+                <h4 class="font-bold text-green-900 mb-3">📖 How to Read Results:</h4>
+                <div class="space-y-3 text-sm">
+                    <div>
+                        <span class="font-bold">U statistic:</span>
+                        <span class="text-gray-700"> Counts how many times values from Group B exceed values from Group A. Smaller U = bigger difference.</span>
+                    </div>
+                    <div>
+                        <span class="font-bold">Z-score:</span>
+                        <span class="text-gray-700"> Standardized version of U. Used for larger samples (n > 20).</span>
+                    </div>
+                    <div>
+                        <span class="font-bold">p-value:</span>
+                        <span class="text-gray-700"> If p < 0.05, the distributions differ significantly.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-red-50 rounded-lg p-6">
+                <h4 class="font-bold text-red-900 mb-3">⚠️ Watch Out For:</h4>
+                <ul class="text-sm text-gray-700 space-y-1">
+                    <li>• <strong>Less powerful</strong> than t-test if data IS normal (harder to detect real differences)</li>
+                    <li>• <strong>Only for 2 groups</strong> — if you have 3+, use Kruskal-Wallis instead</li>
+                    <li>• Tests if distributions differ, not just medians (can be significant even if medians are same!)</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- PROPORTIONS -->
+        <div id="proportions" class="test-card bg-white rounded-lg shadow-lg p-8 mb-8 border-t-4 border-cyan-500">
+            <div class="emoji-header mb-4">📊</div>
+            <h2 class="text-3xl font-bold mb-4 text-cyan-700">Z-Test for Proportions</h2>
+            <p class="text-xl text-gray-600 mb-6 italic">"Comparing percentages like a pro"</p>
+
+            <div class="bg-cyan-50 rounded-lg p-6 mb-6">
+                <h3 class="font-bold text-lg mb-3 text-cyan-900">What is it?</h3>
+                <p class="text-gray-700">
+                    The Z-test for proportions compares <strong>percentages</strong> between two groups.
+                    Think: conversion rates, click-through rates, success rates — anything that's "X out of Y people did something."
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6 mb-6">
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h4 class="font-bold text-gray-800 mb-3">When to Use It:</h4>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li>✓ Comparing <strong>two proportions/percentages</strong></li>
+                        <li>✓ Data is <strong>binary</strong> (yes/no, click/no click)</li>
+                        <li>✓ Large enough sample (at least 10 successes and failures in each group)</li>
+                        <li>✓ Independent samples</li>
+                    </ul>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h4 class="font-bold text-gray-800 mb-3">Common Use Cases:</h4>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li>• A/B testing conversion rates</li>
+                        <li>• Comparing click-through rates</li>
+                        <li>• Survey response differences</li>
+                        <li>• Win rates between strategies</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 rounded-lg p-6 mb-6">
+                <h4 class="font-bold text-blue-900 mb-3">🎬 Real Example:</h4>
+                <p class="text-gray-700 mb-3">
+                    <strong>Scenario:</strong> You're testing two landing page designs for sign-ups.
+                </p>
+                <ul class="text-sm text-gray-700 space-y-1 mb-3">
+                    <li>• <strong>Page A:</strong> 1,200 visitors → 84 sign-ups → <strong>7.0% conversion</strong></li>
+                    <li>• <strong>Page B:</strong> 1,200 visitors → 108 sign-ups → <strong>9.0% conversion</strong></li>
+                </ul>
+                <p class="text-gray-700 font-medium">
+                    <strong>Question:</strong> Is that 2% difference real or just luck?
+                </p>
+                <p class="text-gray-700 mt-2">
+                    <strong>Answer:</strong> Run a Z-test for proportions!
+                    If p < 0.05, Page B legitimately has a higher conversion rate. Ship it! 🚀
+                </p>
+            </div>
+
+            <div class="bg-green-50 rounded-lg p-6 mb-6">
+                <h4 class="font-bold text-green-900 mb-3">📖 How to Read Results:</h4>
+                <div class="space-y-3 text-sm">
+                    <div>
+                        <span class="font-bold">Z-score:</span>
+                        <span class="text-gray-700"> How many standard errors apart the proportions are. Bigger Z = more different.</span>
+                    </div>
+                    <div>
+                        <span class="font-bold">p-value:</span>
+                        <span class="text-gray-700"> If p < 0.05, the difference is statistically significant.</span>
+                    </div>
+                    <div>
+                        <span class="font-bold">Difference in proportions:</span>
+                        <span class="text-gray-700"> Absolute difference (e.g., 9.0% - 7.0% = 2.0% improvement).</span>
+                    </div>
+                    <div class="bg-yellow-100 p-3 rounded">
+                        <span class="font-bold text-yellow-900">💡 Pro Tip:</span>
+                        <span class="text-gray-700"> Even if p < 0.05, ask: "Is this difference <em>meaningful</em> for business?" A 0.1% improvement might be "significant" but not worth the effort!</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-red-50 rounded-lg p-6">
+                <h4 class="font-bold text-red-900 mb-3">⚠️ Watch Out For:</h4>
+                <ul class="text-sm text-gray-700 space-y-1">
+                    <li>• Needs <strong>large samples</strong> (at least 10 successes/failures per group)</li>
+                    <li>• <strong>Small differences can be "significant"</strong> with huge samples but not actionable</li>
+                    <li>• Assumes <strong>independence</strong> — don't use for before/after on same people</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- BAYESIAN -->
+        <div id="bayesian" class="test-card bg-white rounded-lg shadow-lg p-8 mb-8 border-t-4 border-violet-500">
+            <div class="emoji-header mb-4">🎲</div>
+            <h2 class="text-3xl font-bold mb-4 text-violet-700">Bayesian Statistics</h2>
+            <p class="text-xl text-gray-600 mb-6 italic">"A different way of thinking about data"</p>
+
+            <div class="bg-violet-50 rounded-lg p-6 mb-6">
+                <h3 class="font-bold text-lg mb-3 text-violet-900">What is it?</h3>
+                <p class="text-gray-700">
+                    Bayesian statistics flips traditional stats on its head. Instead of asking "what's the probability of seeing this data IF my hypothesis is true?" (frequentist),
+                    it asks "<strong>what's the probability my hypothesis is true GIVEN the data I've seen?</strong>" Mind = blown. 🤯
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6 mb-6">
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h4 class="font-bold text-gray-800 mb-3">Key Differences from Frequentist:</h4>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li>✓ Incorporates <strong>prior knowledge</strong></li>
+                        <li>✓ Updates beliefs as new data arrives</li>
+                        <li>✓ Gives <strong>probability</strong> that hypothesis is true</li>
+                        <li>✓ Can make decisions with less data</li>
+                        <li>✓ More intuitive interpretation</li>
+                    </ul>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h4 class="font-bold text-gray-800 mb-3">The Core Equation:</h4>
+                    <div class="bg-white p-3 rounded text-sm">
+                        <strong>Posterior = Prior × Likelihood</strong>
+                    </div>
+                    <ul class="space-y-1 text-sm text-gray-700 mt-2">
+                        <li><strong>Prior:</strong> What you believed before seeing data</li>
+                        <li><strong>Likelihood:</strong> What the data says</li>
+                        <li><strong>Posterior:</strong> Your updated belief</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 rounded-lg p-6 mb-6">
+                <h4 class="font-bold text-blue-900 mb-3">🎬 Real Example:</h4>
+                <p class="text-gray-700 mb-3">
+                    <strong>Scenario:</strong> You're running an A/B test for a new checkout flow.
+                </p>
+                <ul class="text-sm text-gray-700 space-y-1 mb-3">
+                    <li>• <strong>Prior belief:</strong> Based on past tests, you think conversion rate is around 5%</li>
+                    <li>• <strong>Observed data:</strong> New flow gets 6.2% conversion (58 out of 935 users)</li>
+                    <li>• <strong>Posterior belief:</strong> Combining prior + data, you now believe it's 5.8%</li>
+                </ul>
+                <p class="text-gray-700 font-medium">
+                    <strong>Bayesian Answer:</strong> "There's an 87% probability that Version B is better than Version A."
+                </p>
+                <p class="text-gray-700 mt-2">
+                    <strong>Frequentist Answer:</strong> "We reject the null hypothesis at p < 0.05."
+                </p>
+                <p class="text-gray-700 mt-2 text-sm">
+                    <em>See the difference? Bayesian gives you the probability directly — way more useful for business decisions!</em>
+                </p>
+            </div>
+
+            <div class="bg-green-50 rounded-lg p-6 mb-6">
+                <h4 class="font-bold text-green-900 mb-3">📖 Key Concepts:</h4>
+                <div class="space-y-3 text-sm">
+                    <div>
+                        <span class="font-bold">Prior Distribution:</span>
+                        <span class="text-gray-700"> Your belief before seeing data. Can be "uninformative" (no strong opinion) or "informative" (based on past data).</span>
+                    </div>
+                    <div>
+                        <span class="font-bold">Credible Interval (CI):</span>
+                        <span class="text-gray-700"> Bayesian version of confidence interval. "95% CI [0.05, 0.08]" means "95% chance the true value is between 5% and 8%." (This is what people THINK confidence intervals mean!)</span>
+                    </div>
+                    <div>
+                        <span class="font-bold">P(B > A):</span>
+                        <span class="text-gray-700"> Direct probability that B is better than A. E.g., "82% chance B beats A."</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-yellow-50 rounded-lg p-6 mb-6">
+                <h4 class="font-bold text-yellow-900 mb-3">💡 Why Marketers Love Bayesian:</h4>
+                <ul class="text-sm text-gray-700 space-y-2">
+                    <li>• <strong>Actionable results:</strong> Get probability of success, not just "significant or not"</li>
+                    <li>• <strong>Faster decisions:</strong> Can stop tests early when you have enough evidence</li>
+                    <li>• <strong>Incorporates domain knowledge:</strong> Use past campaign data as priors</li>
+                    <li>• <strong>Easier to explain:</strong> "87% chance B is better" > "p = 0.03 with 97% CI"</li>
+                </ul>
+            </div>
+
+            <div class="bg-red-50 rounded-lg p-6">
+                <h4 class="font-bold text-red-900 mb-3">⚠️ Watch Out For:</h4>
+                <ul class="text-sm text-gray-700 space-y-1">
+                    <li>• <strong>Prior choice matters!</strong> Different priors can give different results</li>
+                    <li>• <strong>More complex to calculate</strong> (but our calculator does it for you!)</li>
+                    <li>• <strong>Not universally accepted</strong> in academic journals (yet)</li>
+                    <li>• Can be <strong>computationally intensive</strong> for complex models</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- QUICK REFERENCE TABLE -->
+        <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg shadow-lg p-8 mb-8 border-2 border-blue-200">
+            <h2 class="text-3xl font-bold mb-6 text-blue-900">🔍 Quick Reference: Which Test Do I Use?</h2>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white rounded-lg overflow-hidden text-sm">
+                    <thead class="bg-blue-600 text-white">
+                        <tr>
+                            <th class="px-4 py-3 text-left">Question</th>
+                            <th class="px-4 py-3 text-left">Data Type</th>
+                            <th class="px-4 py-3 text-left"># of Groups</th>
+                            <th class="px-4 py-3 text-left">Test to Use</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="px-4 py-3">Are two group means different?</td>
+                            <td class="px-4 py-3">Continuous, normal</td>
+                            <td class="px-4 py-3">2</td>
+                            <td class="px-4 py-3 font-semibold text-purple-600">T-Test</td>
+                        </tr>
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="px-4 py-3">Are 3+ group means different?</td>
+                            <td class="px-4 py-3">Continuous, normal</td>
+                            <td class="px-4 py-3">3+</td>
+                            <td class="px-4 py-3 font-semibold text-blue-600">ANOVA</td>
+                        </tr>
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="px-4 py-3">Are two variables related?</td>
+                            <td class="px-4 py-3">Categorical</td>
+                            <td class="px-4 py-3">2+</td>
+                            <td class="px-4 py-3 font-semibold text-green-600">Chi-Square</td>
+                        </tr>
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="px-4 py-3">Can I predict Y from X?</td>
+                            <td class="px-4 py-3">Both continuous</td>
+                            <td class="px-4 py-3">N/A</td>
+                            <td class="px-4 py-3 font-semibold text-orange-600">Regression</td>
+                        </tr>
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="px-4 py-3">How strongly are X and Y related?</td>
+                            <td class="px-4 py-3">Both continuous</td>
+                            <td class="px-4 py-3">N/A</td>
+                            <td class="px-4 py-3 font-semibold text-yellow-600">Correlation</td>
+                        </tr>
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="px-4 py-3">Are two groups different? (non-normal data)</td>
+                            <td class="px-4 py-3">Ordinal or skewed</td>
+                            <td class="px-4 py-3">2</td>
+                            <td class="px-4 py-3 font-semibold text-indigo-600">Mann-Whitney</td>
+                        </tr>
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="px-4 py-3">Are two percentages different?</td>
+                            <td class="px-4 py-3">Binary/proportions</td>
+                            <td class="px-4 py-3">2</td>
+                            <td class="px-4 py-3 font-semibold text-cyan-600">Z-Test (Proportions)</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3">What's the probability B beats A?</td>
+                            <td class="px-4 py-3">Any</td>
+                            <td class="px-4 py-3">2</td>
+                            <td class="px-4 py-3 font-semibold text-violet-600">Bayesian A/B Test</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- FINAL TIPS -->
+        <div class="bg-gradient-to-br from-green-50 to-teal-50 rounded-lg shadow-lg p-8 border-2 border-green-200">
+            <h2 class="text-3xl font-bold mb-6 text-green-900">🎓 Final Exam Survival Tips</h2>
+
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="bg-white rounded-lg p-6">
+                    <h3 class="font-bold text-green-800 mb-3">✅ DO:</h3>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li>• Check your data type FIRST (continuous, categorical, ordinal?)</li>
+                        <li>• Always look at effect sizes, not just p-values!</li>
+                        <li>• Visualize your data before running tests</li>
+                        <li>• Report confidence/credible intervals</li>
+                        <li>• Ask: "Is this statistically AND practically significant?"</li>
+                        <li>• Use the right test for your data (don't force it!)</li>
+                    </ul>
+                </div>
+
+                <div class="bg-white rounded-lg p-6">
+                    <h3 class="font-bold text-red-800 mb-3">❌ DON'T:</h3>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li>• Confuse correlation with causation</li>
+                        <li>• Cherry-pick results until you get p < 0.05 (p-hacking!)</li>
+                        <li>• Ignore assumptions (normality, independence, etc.)</li>
+                        <li>• Run multiple tests without correcting for multiple comparisons</li>
+                        <li>• Use t-test for 3+ groups (use ANOVA!)</li>
+                        <li>• Treat "not significant" as "no effect" (absence of evidence ≠ evidence of absence)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mt-6 bg-amber-100 rounded-lg p-6 border-2 border-amber-300">
+                <h3 class="font-bold text-amber-900 mb-3 text-lg">🎯 The Golden Rule:</h3>
+                <p class="text-gray-800 text-lg">
+                    <strong>Stats is a tool, not a magic 8-ball.</strong> Numbers can guide decisions, but they can't tell you what to do.
+                    Always combine statistical results with domain knowledge, business context, and common sense.
+                </p>
+                <p class="text-gray-700 mt-3">
+                    And remember: <strong>p < 0.05 doesn't mean your idea is good</strong> — it just means it's probably not random.
+                    A tiny, meaningless effect can still be "statistically significant" with enough data!
+                </p>
+            </div>
+
+            <div class="mt-6 text-center">
+                <p class="text-2xl font-bold text-green-800 mb-2">Good luck on your exams! 🍀</p>
+                <p class="text-gray-600">You've got this. Now go show those p-values who's boss! 💪</p>
+                <div class="mt-4">
+                    <a href="index.html" class="inline-block bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition">
+                        Back to Calculators →
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-16">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p class="mb-2">📚 Statistical Calculators - Student Cheatsheet</p>
+            <p class="text-gray-400 text-sm">Made with ☕ and 📊 for marketing research students</p>
+            <div class="mt-4">
+                <a href="index.html" class="text-gray-400 hover:text-white transition">← Back to Calculator Collection</a>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
