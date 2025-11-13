@@ -306,7 +306,9 @@ This is a personal collection of calculators. If you find issues or have suggest
 
 ## License
 
-Open source - free to use and modify for personal and commercial purposes.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Free to use and modify for personal and commercial purposes.
 
 ## Author
 
