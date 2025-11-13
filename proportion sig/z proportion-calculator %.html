@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- Previous head content remains the same -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketing Campaign Significance Calculator</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen py-12">
+    <div class="max-w-7xl mx-auto px-4">
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h1 class="text-2xl font-bold mb-4">Marketing Campaign Significance Calculator</h1>
+            
+            <!-- Sample Size Input -->
+            <div class="mb-6">
+                <h3 class="font-medium mb-2">Sample Size</h3>
+                <input
+                    type="number"
+                    id="sampleSize"
+                    class="border rounded px-2 py-1"
+                    placeholder="Enter sample size"
+                    value="1200"
+                />
+                <p class="text-sm text-gray-600 mt-1">Example: Total email recipients or webpage visitors</p>
+            </div>
+
+            <!-- Confidence Level Selection -->
+            <div class="mb-6">
+                <h3 class="font-medium mb-2">Confidence Level</h3>
+                <div class="flex gap-2">
+                    <button onclick="setConfidenceLevel(99)" class="px-4 py-2 rounded bg-gray-200">99%</button>
+                    <button onclick="setConfidenceLevel(95)" class="px-4 py-2 rounded bg-blue-500 text-white">95%</button>
+                    <button onclick="setConfidenceLevel(90)" class="px-4 py-2 rounded bg-gray-200">90%</button>
+                    <button onclick="setConfidenceLevel(80)" class="px-4 py-2 rounded bg-gray-200">80%</button>
+                </div>
+            </div>
+
+            <!-- Marketing Example -->
+            <div class="mb-6 bg-blue-50 p-4 rounded">
+                <h3 class="font-medium mb-2">Marketing Example</h3>
+                <p class="text-sm mb-2">Here's a sample dataset comparing email campaign performance across different content types:</p>
+                <button 
+                    onclick="loadExample()"
+                    class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mb-2"
+                >
+                    Load Example Data
+                </button>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm font-medium">Labels:</p>
+                        <pre class="text-sm bg-white p-2 rounded">
+Product Updates
+Industry News
+Customer Stories
+Educational Tips
+Promotional Offers</pre>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium">Values (%):</p>
+                        <pre class="text-sm bg-white p-2 rounded">
+45.2
+38.7
+32.4
+29.8
+25.3</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Input -->
+            <div class="mb-6 grid grid-cols-2 gap-4">
+                <div>
+                    <h3 class="font-medium mb-2">Labels</h3>
+                    <p class="text-sm text-gray-600 mb-2">Enter one label per line</p>
+                    <textarea
+                        id="labels"
+                        class="w-full h-32 border rounded p-2 font-mono"
+                        placeholder="Product Updates&#10;Industry News&#10;Customer Stories"
+                    ></textarea>
+                </div>
+                <div>
+                    <h3 class="font-medium mb-2">Values (%)</h3>
+                    <p class="text-sm text-gray-600 mb-2">Enter one percentage per line</p>
+                    <textarea
+                        id="values"
+                        class="w-full h-32 border rounded p-2 font-mono"
+                        placeholder="45.2&#10;38.7&#10;32.4"
+                    ></textarea>
+                </div>
+            </div>
+
+            <button 
+                onclick="calculateSignificance()"
+                class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            >
+                Calculate Significance
+            </button>
+
+            <!-- Results -->
+            <div class="mt-6">
+                <h3 class="font-medium mb-2">Results</h3>
+                <div class="overflow-x-auto">
+                    <table id="resultsTable" class="min-w-full border">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border p-2">Content Type 1</th>
+                                <th class="border p-2">%</th>
+                                <th class="border p-2">Content Type 2</th>
+                                <th class="border p-2">%</th>
+                                <th class="border p-2">Difference</th>
+                                <th class="border p-2">Z-Score</th>
+                                <th class="border p-2">Significant</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Marketing Interpretation Guide -->
+            <div class="mt-8 bg-gray-50 p-4 rounded">
+                <h3 class="font-medium mb-4">Marketing Interpretation Guide</h3>
+                
+                <div class="mb-4">
+                    <h4 class="font-medium mb-2">Example Analysis</h4>
+                    <p class="mb-2">Using our example email campaign data, here's how to interpret the results:</p>
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li><strong>Strong Evidence (High Z-Score > 3.0):</strong> The difference between Product Updates (45.2%) and Promotional Offers (25.3%) shows a very high Z-score, indicating a clear preference for product-focused content.</li>
+                        <li><strong>Moderate Evidence (Z-Score 2.0-3.0):</strong> The difference between Industry News (38.7%) and Educational Tips (29.8%) suggests a meaningful but less dramatic difference in engagement.</li>
+                        <li><strong>Weak Evidence (Z-Score < 2.0):</strong> Small differences between adjacent categories (like Customer Stories vs Educational Tips) might not be significant enough to influence content strategy.</li>
+                    </ul>
+                </div>
+
+                <div class="mb-4">
+                    <h4 class="font-medium mb-2">Business Applications</h4>
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li><strong>Content Strategy:</strong> Focus resources on content types that show significantly higher engagement.</li>
+                        <li><strong>A/B Testing:</strong> Use for validating if changes to email subject lines, CTAs, or layouts produce statistically significant improvements.</li>
+                        <li><strong>Campaign Planning:</strong> Prioritize significantly better-performing content types in your content calendar.</li>
+                    </ul>
+                </div>
+
+                <div class="mb-4">
+                    <h4 class="font-medium mb-2">Common Marketing Applications</h4>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li>Email open rates across different subject line styles</li>
+                        <li>Click-through rates for different CTA placements</li>
+                        <li>Conversion rates across different landing page designs</li>
+                        <li>Engagement rates across different content types</li>
+                        <li>Response rates for different offer types</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Z-Score Interpretation Guide -->
+            <div class="mt-8 bg-gray-50 p-4 rounded">
+                <h3 class="font-medium mb-4">Z-Score Interpretation Guide</h3>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full border-collapse">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="border p-2 text-left">Z-Score</th>
+                                <th class="border p-2 text-left">P-Value</th>
+                                <th class="border p-2 text-left">Confidence</th>
+                                <th class="border p-2 text-left">Interpretation</th>
+                                <th class="border p-2 text-left">Business Context</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="bg-white">
+                                <td class="border p-2 font-medium">3.5+</td>
+                                <td class="border p-2">< 0.0005</td>
+                                <td class="border p-2">99.95%</td>
+                                <td class="border p-2">Very strong evidence of difference</td>
+                                <td class="border p-2">Game-changing differences that warrant immediate action</td>
+                            </tr>
+                            <tr class="bg-gray-50">
+                                <td class="border p-2 font-medium">2.6 - 3.4</td>
+                                <td class="border p-2">0.001 - 0.01</td>
+                                <td class="border p-2">99 - 99.9%</td>
+                                <td class="border p-2">Strong evidence of difference</td>
+                                <td class="border p-2">Clear differences that should influence decisions</td>
+                            </tr>
+                            <tr class="bg-white">
+                                <td class="border p-2 font-medium">2.0 - 2.5</td>
+                                <td class="border p-2">0.01 - 0.05</td>
+                                <td class="border p-2">95 - 99%</td>
+                                <td class="border p-2">Good evidence of difference</td>
+                                <td class="border p-2">Standard threshold for most business decisions</td>
+                            </tr>
+                            <tr class="bg-gray-50">
+                                <td class="border p-2 font-medium">1.7 - 1.9</td>
+                                <td class="border p-2">0.05 - 0.10</td>
+                                <td class="border p-2">90 - 95%</td>
+                                <td class="border p-2">Weak evidence of difference</td>
+                                <td class="border p-2">May warrant further investigation</td>
+                            </tr>
+                            <tr class="bg-white">
+                                <td class="border p-2 font-medium">< 1.7</td>
+                                <td class="border p-2">> 0.10</td>
+                                <td class="border p-2">< 90%</td>
+                                <td class="border p-2">No significant evidence</td>
+                                <td class="border p-2">Differences likely due to chance</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-6 bg-blue-50 p-4 rounded">
+                    <h3 class="font-medium mb-2">Common Thresholds:</h3>
+                    <ul class="space-y-2">
+                        <li><strong>1.96:</strong> Standard 95% confidence level (most common in business)</li>
+                        <li><strong>2.576:</strong> 99% confidence level (for critical decisions)</li>
+                        <li><strong>3.291:</strong> 99.9% confidence level (for very high-stakes decisions)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Previous script content remains the same, adding loadExample function
+        function loadExample() {
+            document.getElementById('sampleSize').value = "1200";
+            document.getElementById('labels').value = 
+`Product Updates
+Industry News
+Customer Stories
+Educational Tips
+Promotional Offers`;
+            document.getElementById('values').value = 
+`45.2
+38.7
+32.4
+29.8
+25.3`;
+            calculateSignificance();
+        }
+
+        // Rest of the previous script content remains the same
+        let confidenceLevel = 95;
+
+        function setConfidenceLevel(level) {
+            confidenceLevel = level;
+            document.querySelectorAll('[onclick^="setConfidenceLevel"]').forEach(button => {
+                button.className = button.onclick.toString().includes(level.toString()) 
+                    ? 'px-4 py-2 rounded bg-blue-500 text-white'
+                    : 'px-4 py-2 rounded bg-gray-200';
+            });
+        }
+
+        function calculateZScore(confidence) {
+            const zScores = {
+                99: 2.576,
+                95: 1.96,
+                90: 1.645,
+                80: 1.28
+            };
+            return zScores[confidence];
+        }
+
+        function parseInputs() {
+            const labels = document.getElementById('labels').value.split('\n')
+                .map(label => label.trim())
+                .filter(label => label.length > 0);
+            
+            const values = document.getElementById('values').value.split('\n')
+                .map(value => parseFloat(value.trim()))
+                .filter(value => !isNaN(value));
+            
+            const items = [];
+            for (let i = 0; i < Math.min(labels.length, values.length); i++) {
+                items.push({
+                    label: labels[i],
+                    percentage: values[i]
+                });
+            }
+            
+            return items;
+        }
+
+        function calculateSignificance() {
+            const sampleSize = parseInt(document.getElementById('sampleSize').value);
+            
+            // Parse labels and values
+            const items = parseInputs();
+
+            const resultsBody = document.getElementById('resultsBody');
+            resultsBody.innerHTML = '';
+
+            // Calculate significance for each pair
+            for (let i = 0; i < items.length; i++) {
+                for (let j = i + 1; j < items.length; j++) {
+                    const p1 = items[i].percentage / 100;
+                    const p2 = items[j].percentage / 100;
+                    
+                    // Calculate pooled standard error
+                    const pooledP = (p1 + p2) / 2;
+                    const se = Math.sqrt(pooledP * (1 - pooledP) * (2/sampleSize));
+                    const zScore = Math.abs(p1 - p2) / se;
+                    
+                    const row = document.createElement('tr');
+                    const isSignificant = zScore > calculateZScore(confidenceLevel);
+                    
+                    row.innerHTML = `
+                        <td class="border p-2">${items[i].label}</td>
+                        <td class="border p-2">${items[i].percentage.toFixed(1)}%</td>
+                        <td class="border p-2">${items[j].label}</td>
+                        <td class="border p-2">${items[j].percentage.toFixed(1)}%</td>
+                        <td class="border p-2">${Math.abs(items[i].percentage - items[j].percentage).toFixed(1)}%</td>
+                        <td class="border p-2">${zScore.toFixed(2)}</td>
+                        <td class="border p-2">
+                            <span class="px-2 py-1 rounded ${isSignificant ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                                ${isSignificant ? 'Yes' : 'No'}
+                            </span>
+                        </td>
+                    `;
+                    
+                    resultsBody.appendChild(row);
+                }
+            }
+        }
+    </script>
+</body>
+</html>

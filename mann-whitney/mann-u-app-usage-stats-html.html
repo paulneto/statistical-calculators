@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Usage Statistics Calculator</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+</head>
+<body class="bg-gray-50 p-6">
+    <div class="max-w-6xl mx-auto">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h1 class="text-2xl font-bold mb-6">App Usage Statistics Comparison</h1>
+
+            <!-- Data Input -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium mb-2">Paste Data Below</label>
+                <div class="text-sm text-gray-600 mb-2">First line should be: user_id,app_name,duration_minutes</div>
+                <div class="relative">
+                    <div id="overlay" class="absolute inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50 hidden rounded">
+                        <div class="text-white">Processing...</div>
+                    </div>
+                    <textarea 
+                        id="csvInput" 
+                        rows="20" 
+                        class="w-full p-2 border rounded font-mono text-sm"
+                        wrap="off"
+                        spellcheck="false"
+                    >user_id,app_name,duration_minutes</textarea>
+                </div>
+                <div class="mt-2 text-sm text-gray-600">
+                    <span id="dataStats"></span>
+                </div>
+            </div>
+
+            <!-- Confidence Level Selection -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium mb-2">Confidence Level</label>
+                <div class="flex gap-2" id="confidenceLevels">
+                    <button class="px-4 py-2 rounded bg-blue-500 text-white" data-level="95">95%</button>
+                    <button class="px-4 py-2 rounded bg-gray-100" data-level="99">99%</button>
+                    <button class="px-4 py-2 rounded bg-gray-100" data-level="90">90%</button>
+                </div>
+            </div>
+
+            <button id="analyzeButton" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 mb-6">
+                Analyze All App Combinations
+            </button>
+
+            <!-- Results -->
+            <div id="results" class="hidden">
+                <!-- App Rankings -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-medium mb-4">App Rankings by Mean Usage</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full">
+                            <thead>
+                                <tr class="bg-gray-50">
+                                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">Rank</th>
+                                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">App Name</th>
+                                    <th class="px-4 py-2 text-right text-sm font-medium text-gray-500">Mean Usage</th>
+                                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">Group</th>
+                                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">Significantly Higher Than</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rankingsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Detailed Results -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">App 1</th>
+                                <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">App 2</th>
+                                <th class="px-4 py-2 text-right text-sm font-medium text-gray-500">Z-Score</th>
+                                <th class="px-4 py-2 text-right text-sm font-medium text-gray-500">Sample Sizes</th>
+                                <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">Result</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="debugInfo" class="mt-4 p-4 bg-gray-100 rounded text-sm hidden"></div>
+
+            <!-- Documentation -->
+            <div class="mt-8 space-y-6">
+                <!-- About the Test -->
+                <div class="bg-gray-50 p-4 rounded">
+                    <h3 class="font-medium mb-4">About the Mann-Whitney U Test</h3>
+                    <div class="space-y-4 text-sm text-gray-600">
+                        <div>
+                            <p class="font-medium text-gray-700">What is it?</p>
+                            <p>The Mann-Whitney U test is a non-parametric statistical test that compares two independent groups. It's especially useful for app usage data because it:</p>
+                            <ul class="list-disc pl-5 mt-2 space-y-1">
+                                <li>Doesn't assume normal distribution (app usage is typically skewed)</li>
+                                <li>Works well with outliers (common in usage data)</li>
+                                <li>Handles unequal sample sizes</li>
+                                <li>Compares entire distributions, not just averages</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- How to Interpret -->
+                <div class="bg-gray-50 p-4 rounded">
+                    <h3 class="font-medium mb-4">How to Interpret Results</h3>
+                    <div class="space-y-4 text-sm text-gray-600">
+                        <div>
+                            <p class="font-medium text-gray-700">Key Metrics:</p>
+                            <ul class="list-disc pl-5 mt-2 space-y-2">
+                                <li><strong>Mean Usage:</strong> Average time spent in the app</li>
+                                <li><strong>Group:</strong> Letter indicating statistical grouping (A is highest)</li>
+                                <li><strong>Significantly Higher Than:</strong> Shows which groups this app significantly outperforms</li>
+                                <li><strong>Z-Score:</strong> Measures the strength of the difference. Higher absolute values indicate stronger differences:
+                                    <ul class="list-disc pl-5 mt-1 space-y-1">
+                                        <li>Above 1.96 = Significant at 95% confidence</li>
+                                        <li>Above 2.576 = Significant at 99% confidence</li>
+                                        <li>Above 1.645 = Significant at 90% confidence</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- When to Use -->
+                <div class="bg-gray-50 p-4 rounded">
+                    <h3 class="font-medium mb-4">When to Use (and When Not to)</h3>
+                    <div class="grid md:grid-cols-2 gap-6 text-sm text-gray-600">
+                        <div>
+                            <p class="font-medium text-green-700 mb-2">Best Used For:</p>
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li>Comparing usage time between apps</li>
+                                <li>When data is highly skewed</li>
+                                <li>When there are outliers</li>
+                                <li>When sample sizes are unequal</li>
+                                <li>Engagement metrics analysis</li>
+                                <li>Before/after comparisons</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <p class="font-medium text-red-700 mb-2">Not Recommended For:</p>
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li>Very small samples (< 5 users per app)</li>
+                                <li>When you need effect sizes</li>
+                                <li>Comparing more than two apps at once</li>
+                                <li>When precise differences matter</li>
+                                <li>Revenue or conversion analysis</li>
+                                <li>Time series analysis</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let confidenceLevel = 95;
+
+        function calculateMean(arr) {
+            return arr.reduce((a, b) => a + b, 0) / arr.length;
+        }
+
+        function calculateMannWhitney(app1Data, app2Data) {
+            const combined = [...app1Data.map(v => ({ value: v, group: 'A' })),
+                             ...app2Data.map(v => ({ value: v, group: 'B' }))]
+                .sort((a, b) => a.value - b.value);
+
+            let currentRank = 1;
+            for (let i = 0; i < combined.length; i++) {
+                let tieCount = 1;
+                while (i + tieCount < combined.length && 
+                       combined[i].value === combined[i + tieCount].value) {
+                    tieCount++;
+                }
+                
+                const averageRank = currentRank + (tieCount - 1) / 2;
+                for (let j = 0; j < tieCount; j++) {
+                    combined[i + j].rank = averageRank;
+                }
+                
+                currentRank += tieCount;
+                i += tieCount - 1;
+            }
+
+            const n1 = app1Data.length;
+            const n2 = app2Data.length;
+            
+            const rankSumA = combined
+                .filter(x => x.group === 'A')
+                .reduce((sum, x) => sum + x.rank, 0);
+                
+            const U1 = rankSumA - (n1 * (n1 + 1)) / 2;
+            const U2 = n1 * n2 - U1;
+            
+            const U = Math.min(U1, U2);
+            
+            const mean = (n1 * n2) / 2;
+            const stdDev = Math.sqrt((n1 * n2 * (n1 + n2 + 1)) / 12);
+            const zScore = (U - mean) / stdDev;
+            
+            const criticalValues = {
+                99: 2.576,
+                95: 1.96,
+                90: 1.645
+            };
+
+            return {
+                zScore: Math.abs(zScore),
+                significant: Math.abs(zScore) > criticalValues[confidenceLevel],
+                sampleSizeA: n1,
+                sampleSizeB: n2
+            };
+        }
+
+				function assignLetterGroups(results, appMeans) {
+				    const apps = Object.keys(appMeans);
+				    const sortedApps = apps.sort((a, b) => appMeans[b] - appMeans[a]);
+				    const letters = {};
+				    let assignedGroups = [];
+				    let currentGroup = 0;
+
+				    // Helper function to check if two apps are significantly different
+				    const isSignificantlyDifferent = (app1, app2) => {
+				        return results.some(r => 
+				            (r.app1 === app1 && r.app2 === app2 && r.significant) ||
+				            (r.app1 === app2 && r.app2 === app1 && r.significant)
+				        );
+				    };
+
+				    // Assign first app to 'A'
+				    letters[sortedApps[0]] = 'A';
+				    assignedGroups.push({ app: sortedApps[0], group: 'A' });
+
+				    // Assign letters to remaining apps
+				    for (let i = 1; i < sortedApps.length; i++) {
+				        const currentApp = sortedApps[i];
+				        let assignedLetter = 'A';
+
+				        // Check against previous apps to find the appropriate letter
+				        for (let j = i - 1; j >= 0; j--) {
+				            const prevApp = sortedApps[j];
+				            if (isSignificantlyDifferent(currentApp, prevApp)) {
+				                const prevGroupNum = letters[prevApp].charCodeAt(0) - 65;
+				                assignedLetter = String.fromCharCode(65 + prevGroupNum + 1);
+				                break;
+				            }
+				        }
+
+				        // Ensure the assigned letter is unique in the sequence
+				        while (assignedGroups.some(g => g.group === assignedLetter)) {
+				            assignedLetter = String.fromCharCode(assignedLetter.charCodeAt(0) + 1);
+				        }
+
+				        letters[currentApp] = assignedLetter;
+				        assignedGroups.push({ app: currentApp, group: assignedLetter });
+				    }
+
+				    return letters;
+				}
+
+        function updateDataStats() {
+            const text = document.getElementById('csvInput').value;
+            const lines = text.split('\n').length;
+            document.getElementById('dataStats').textContent = `${lines} lines of data`;
+        }
+
+        // Event handlers
+        document.getElementById('csvInput').addEventListener('input', updateDataStats);
+        document.getElementById('csvInput').addEventListener('paste', () => {
+            setTimeout(updateDataStats, 0);
+        });
+
+        document.getElementById('confidenceLevels').addEventListener('click', (event) => {
+            if (event.target.dataset.level) {
+                confidenceLevel = parseInt(event.target.dataset.level);
+                document.querySelectorAll('#confidenceLevels button').forEach(button => {
+                    button.classList.remove('bg-blue-500', 'text-white');
+                    button.classList.add('bg-gray-100');
+                });
+                event.target.classList.remove('bg-gray-100');
+                event.target.classList.add('bg-blue-500', 'text-white');
+            }
+        });
+
+        document.getElementById('analyzeButton').addEventListener('click', async () => {
+            const overlay = document.getElementById('overlay');
+            const debugInfo = document.getElementById('debugInfo');
+            const analyzeButton = document.getElementById('analyzeButton');
+            
+            try {
+                overlay.classList.remove('hidden');
+                analyzeButton.disabled = true;
+                debugInfo.classList.remove('hidden');
+                debugInfo.textContent = 'Starting analysis...';
+
+                const input = document.getElementById('csvInput').value;
+                if (!input.trim()) {
+                    throw new Error('Please enter data');
+                }
+
+                debugInfo.textContent = 'Parsing CSV...';
+                const parsed = Papa.parse(input, {
+                    header: true,
+                    skipEmptyLines: true,
+                    dynamicTyping: true
+                });
+
+                if (parsed.errors.length > 0) {
+                    throw new Error('CSV parsing errors: ' + parsed.errors.map(e => e.message).join(', '));
+                }
+
+                const data = parsed.data;
+                debugInfo.textContent = `Parsed ${data.length} rows. Processing...`;
+                
+                const uniqueApps = [...new Set(data.map(row => row.app_name))];
+                
+                // Calculate means
+                const appMeans = {};
+                const appData = {};
+                uniqueApps.forEach(app => {
+                    const values = data
+                        .filter(row => row.app_name === app)
+                        .map(row => row.duration_minutes);
+                    appMeans[app] = calculateMean(values);
+                    appData[app] = values;
+                });
+
+                // Calculate all comparisons
+                const results = [];
+                for (let i = 0; i < uniqueApps.length; i++) {
+                    for (let j = i + 1; j < uniqueApps.length; j++) {
+                        const app1 = uniqueApps[i];
+                        const app2 = uniqueApps[j];
+
+                        if (appData[app1].length >= 5 && appData[app2].length >= 5) {
+                            const result = calculateMannWhitney(appData[app1], appData[app2]);
+                            results.push({
+                                app1,
+                                app2,
+                                ...result
+                            });
+                        }
+                    }
+                }
+
+                // Assign letter groups
+                const letters = assignLetterGroups(results, appMeans);
+
+                // Display results
+                const resultsDiv = document.getElementById('results');
+                const rankingsBody = document.getElementById('rankingsBody');
+                const resultsBody = document.getElementById('resultsBody');
+                resultsDiv.classList.remove('hidden');
+
+                // Display rankings
+                rankingsBody.innerHTML = Object.entries(appMeans)
+                    .sort(([,a], [,b]) => b - a)
+                    .map(([app, mean], index) => `
+                        <tr class="border-t">
+                            <td class="px-4 py-2">${index + 1}</td>
+                            <td class="px-4 py-2">${app}</td>
+                            <td class="px-4 py-2 text-right">${Math.round(mean)}</td>
+                            <td class="px-4 py-2 font-medium">${letters[app]}</td>
+                            <td class="px-4 py-2">
+                                ${getSignificantlyHigherThan(app, results, letters)}
+                            </td>
+                        </tr>
+                    `)
+                    .join('');
+
+                function getSignificantlyHigherThan(app, results, letters) {
+                    const higherThanSet = new Set(
+                        results
+                            .filter(r => {
+                                if (r.significant) {
+                                    if (r.app1 === app) {
+                                        return appMeans[r.app1] > appMeans[r.app2];
+                                    } else if (r.app2 === app) {
+                                        return appMeans[r.app2] > appMeans[r.app1];
+                                    }
+                                }
+                                return false;
+                            })
+                            .map(r => {
+                                const otherApp = r.app1 === app ? r.app2 : r.app1;
+                                return letters[otherApp];
+                            })
+                    );
+                    
+                    const higherThan = Array.from(higherThanSet)
+                        .sort()
+                        .join(', ');
+                    
+                    return higherThan ? `> ${higherThan}` : '';
+                }
+
+                // Display detailed results
+                resultsBody.innerHTML = results
+                    .sort((a, b) => b.zScore - a.zScore)
+                    .map(result => `
+                        <tr class="border-t">
+                            <td class="px-4 py-2">${result.app1}</td>
+                            <td class="px-4 py-2">${result.app2}</td>
+                            <td class="px-4 py-2 text-right">${result.zScore.toFixed(2)}</td>
+                            <td class="px-4 py-2 text-right">${result.sampleSizeA} vs ${result.sampleSizeB}</td>
+                            <td class="px-4 py-2">
+                                <span class="px-2 py-1 rounded text-sm ${
+                                    result.significant 
+                                        ? 'bg-green-100 text-green-800' 
+                                        : 'bg-yellow-100 text-yellow-800'
+                                }">
+                                    ${result.significant ? 'Significant' : 'Not Significant'}
+                                </span>
+                            </td>
+                        </tr>
+                    `)
+                    .join('');
+
+                debugInfo.textContent = 'Analysis complete!';
+
+            } catch (error) {
+                debugInfo.textContent = 'Error: ' + error.message;
+                console.error('Analysis error:', error);
+            } finally {
+                overlay.classList.add('hidden');
+                analyzeButton.disabled = false;
+            }
+        });
+
+        // Initialize
+        updateDataStats();
+    </script>
+</body>
+</html>

@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Correlation and Regression in Marketing Research</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1, h2, h3 {
+            color: #1565C0;
+        }
+        
+        .container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 500px;
+            width: 100%;
+            border: 1px solid #ddd;
+            margin: 20px 0;
+            background-color: #f9f9f9;
+        }
+        
+        .data-point {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #3F51B5;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .data-label {
+            position: absolute;
+            font-size: 12px;
+            color: #666;
+            transform: translate(-50%, -100%);
+        }
+        
+        .regression-line {
+            position: absolute;
+            height: 2px;
+            background-color: #FF5722;
+            transform-origin: 0 0;
+        }
+        
+        .axis {
+            position: absolute;
+            background-color: #333;
+        }
+        
+        .x-axis {
+            height: 2px;
+            width: calc(100% - 60px);
+            bottom: 50px;
+            left: 50px;
+        }
+        
+        .y-axis {
+            width: 2px;
+            height: calc(100% - 100px);
+            bottom: 50px;
+            left: 50px;
+        }
+        
+        .axis-label {
+            position: absolute;
+            font-size: 14px;
+        }
+        
+        .x-label {
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .y-label {
+            transform: rotate(-90deg);
+            transform-origin: 0 0;
+            left: 15px;
+            top: 50%;
+        }
+        
+        .prediction-line {
+            position: absolute;
+            border: 1px dashed #4CAF50;
+        }
+        
+        .prediction-label {
+            position: absolute;
+            font-size: 12px;
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        
+        .tick {
+            position: absolute;
+            background-color: #333;
+        }
+        
+        .x-tick {
+            width: 1px;
+            height: 5px;
+            bottom: 50px;
+        }
+        
+        .y-tick {
+            height: 1px;
+            width: 5px;
+            left: 50px;
+        }
+        
+        .tick-label {
+            position: absolute;
+            font-size: 11px;
+            color: #666;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 0 15px;
+        }
+        
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            margin-right: 5px;
+        }
+        
+        .formula-box {
+            background-color: #E3F2FD;
+            border-left: 4px solid #1565C0;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .interpretation {
+            background-color: #F9FBE7;
+            border-left: 4px solid #AFB42B;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .application {
+            background-color: #E8F5E9;
+            border-left: 4px solid #388E3C;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #f5f5f5;
+        }
+        
+        .correlation-examples {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        
+        .example {
+            flex: 0 0 30%;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .key-terms {
+            background-color: #EFEBE9;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Correlation and Regression in Marketing Research</h1>
+    
+    <div class="container">
+        <h2>Understanding the Relationship Between Variables</h2>
+        
+        <p>Marketing researchers often need to understand how different variables are related. For example:</p>
+        <ul>
+            <li>Does advertising spend affect sales revenue?</li>
+            <li>Is there a relationship between customer satisfaction and retention rates?</li>
+            <li>How does product price impact demand?</li>
+        </ul>
+        
+        <p>Two key statistical tools help us analyze these relationships:</p>
+        <ol>
+            <li><strong>Correlation analysis</strong>: Measures the strength and direction of the relationship</li>
+            <li><strong>Regression analysis</strong>: Creates a model to predict one variable based on another</li>
+        </ol>
+    </div>
+    
+    <div class="container">
+        <h2>Example: Advertising Spend vs. Sales Revenue</h2>
+        
+        <p>Below is a dataset showing monthly advertising spend and resulting sales revenue for a company:</p>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Month</th>
+                    <th>Ad Spend ($K)</th>
+                    <th>Sales Revenue ($K)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>January</td><td>10</td><td>170</td></tr>
+                <tr><td>February</td><td>15</td><td>180</td></tr>
+                <tr><td>March</td><td>20</td><td>220</td></tr>
+                <tr><td>April</td><td>25</td><td>250</td></tr>
+                <tr><td>May</td><td>30</td><td>270</td></tr>
+                <tr><td>June</td><td>35</td><td>305</td></tr>
+                <tr><td>July</td><td>40</td><td>325</td></tr>
+                <tr><td>August</td><td>45</td><td>360</td></tr>
+                <tr><td>September</td><td>50</td><td>390</td></tr>
+                <tr><td>October</td><td>55</td><td>400</td></tr>
+                <tr><td>November</td><td>60</td><td>410</td></tr>
+                <tr><td>December</td><td>65</td><td>440</td></tr>
+            </tbody>
+        </table>
+        
+        <div class="chart-container" id="chart">
+            <!-- Axes -->
+            <div class="axis x-axis"></div>
+            <div class="axis y-axis"></div>
+            
+            <!-- Axis labels -->
+            <div class="axis-label x-label">Advertising Spend ($K)</div>
+            <div class="axis-label y-label">Sales Revenue ($K)</div>
+            
+            <!-- Data points will be added via JavaScript -->
+            
+            <!-- Legend -->
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #3F51B5;"></div>
+                    <span>Monthly Data</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #FF5722;"></div>
+                    <span>Regression Line</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #4CAF50; height: 2px;"></div>
+                    <span>Prediction Example</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="formula-box">
+            <h3>Statistical Analysis</h3>
+            <p><strong>Correlation Coefficient (r):</strong> 0.98</p>
+            <p>This indicates a very strong positive relationship between advertising spend and sales revenue.</p>
+            
+            <p><strong>Regression Equation:</strong> Sales = 4.68 × Ad Spend + 130.54</p>
+            <p>Interpretation:</p>
+            <ul>
+                <li><strong>Slope (4.68)</strong>: For each additional $1K spent on advertising, sales increase by approximately $4.68K</li>
+                <li><strong>Y-intercept (130.54)</strong>: With $0 advertising spend, the estimated sales would be $130.54K</li>
+            </ul>
+        </div>
+        
+        <div class="interpretation">
+            <h3>Interpretation</h3>
+            <p>The high correlation coefficient (r = 0.98) indicates that advertising spend and sales revenue are strongly related. The positive value tells us that as advertising spend increases, sales revenue also tends to increase.</p>
+            
+            <p>The regression line provides a mathematical model of this relationship, allowing us to make predictions. For example, if we invest $42K in advertising, we can predict sales of approximately:</p>
+            <p>Sales = 4.68 × 42 + 130.54 = $327.10K</p>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h2>Marketing Applications</h2>
+        
+        <div class="application">
+            <h3>Practical Uses of Correlation and Regression</h3>
+            <ol>
+                <li><strong>Budget Planning</strong>: Determine optimal advertising spend levels to achieve sales targets</li>
+                <li><strong>ROI Calculation</strong>: Measure return on marketing investment (each $1K in ad spend generates $3.68K in additional profit, assuming all other costs remain constant)</li>
+                <li><strong>Performance Forecasting</strong>: Estimate expected sales for different marketing scenarios</li>
+                <li><strong>Competitive Analysis</strong>: Compare the effectiveness of your marketing spend versus competitors</li>
+                <li><strong>Marketing Mix Modeling</strong>: Analyze the impact of different marketing channels and activities</li>
+            </ol>
+        </div>
+        
+        <h3>Understanding Correlation Strength</h3>
+        
+        <div class="correlation-examples">
+            <div class="example">
+                <h4>Weak Correlation (r = 0.2)</h4>
+                <p>Example: Social media impressions vs. brand awareness</p>
+                <p>Interpretation: A slight tendency for increased impressions to associate with higher awareness, but the relationship is weak and other factors likely have more influence.</p>
+            </div>
+            
+            <div class="example">
+                <h4>Moderate Correlation (r = 0.5)</h4>
+                <p>Example: Email frequency vs. unsubscribe rate</p>
+                <p>Interpretation: A noticeable relationship exists, where more frequent emails tend to increase unsubscribe rates, but the pattern isn't universal and varies among segments.</p>
+            </div>
+            
+            <div class="example">
+                <h4>Strong Correlation (r = 0.8)</h4>
+                <p>Example: Customer satisfaction vs. repeat purchase rate</p>
+                <p>Interpretation: A robust relationship where higher satisfaction scores strongly predict repeat purchases, making satisfaction a reliable predictor of customer behavior.</p>
+            </div>
+        </div>
+        
+        <div class="key-terms">
+            <h3>Important Considerations</h3>
+            <ul>
+                <li><strong>Correlation ≠ Causation</strong>: A strong correlation doesn't prove that one variable causes the other. For example, both ad spend and sales might increase due to a holiday season.</li>
+                <li><strong>Outliers</strong>: Extreme values can significantly impact correlation and regression results.</li>
+                <li><strong>Range Restriction</strong>: If data only covers a limited range of values, the true relationship might be misrepresented.</li>
+                <li><strong>Non-linear Relationships</strong>: Some marketing relationships follow curves rather than straight lines (e.g., price vs. demand often follows a curve).</li>
+                <li><strong>Multiple Factors</strong>: In real marketing scenarios, multiple variables often influence outcomes simultaneously, requiring multiple regression analysis.</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h2>Primer on Correlation and Regression</h2>
+        
+        <div class="formula-box">
+            <h3>Correlation</h3>
+            <p>Correlation measures the strength and direction of the relationship between two variables. The correlation coefficient (r) ranges from -1 to +1:</p>
+            <ul>
+                <li><strong>r = +1</strong>: Perfect positive correlation (as X increases, Y always increases)</li>
+                <li><strong>r = 0</strong>: No correlation (no linear relationship between X and Y)</li>
+                <li><strong>r = -1</strong>: Perfect negative correlation (as X increases, Y always decreases)</li>
+            </ul>
+            
+            <p><strong>Formula for Pearson's correlation coefficient (r):</strong></p>
+            <div style="text-align: center; font-family: 'Courier New', monospace; margin: 15px 0;">
+                r = Σ[(X<sub>i</sub> - X̄)(Y<sub>i</sub> - Ȳ)] / √[Σ(X<sub>i</sub> - X̄)² × Σ(Y<sub>i</sub> - Ȳ)²]
+            </div>
+            <p>Where:</p>
+            <ul>
+                <li>X<sub>i</sub> and Y<sub>i</sub> are individual data points</li>
+                <li>X̄ and Ȳ are the means of the X and Y variables</li>
+                <li>Σ represents the sum across all data points</li>
+            </ul>
+            
+            <p><strong>Interpreting correlation strength:</strong></p>
+            <table>
+                <tr><th>Correlation Value</th><th>Strength</th></tr>
+                <tr><td>0.00 - 0.19</td><td>Very weak</td></tr>
+                <tr><td>0.20 - 0.39</td><td>Weak</td></tr>
+                <tr><td>0.40 - 0.59</td><td>Moderate</td></tr>
+                <tr><td>0.60 - 0.79</td><td>Strong</td></tr>
+                <tr><td>0.80 - 1.00</td><td>Very strong</td></tr>
+            </table>
+        </div>
+        
+        <div class="formula-box">
+            <h3>Regression</h3>
+            <p>Regression analysis creates a mathematical model to predict one variable (dependent) based on another (independent). Linear regression produces a "line of best fit" through the data points.</p>
+            
+            <p><strong>Simple linear regression equation:</strong></p>
+            <div style="text-align: center; font-family: 'Courier New', monospace; margin: 15px 0;">
+                Y = bX + a
+            </div>
+            <p>Where:</p>
+            <ul>
+                <li><strong>Y</strong> is the predicted value of the dependent variable</li>
+                <li><strong>X</strong> is the value of the independent variable</li>
+                <li><strong>b</strong> is the slope of the line (how much Y changes when X increases by 1 unit)</li>
+                <li><strong>a</strong> is the Y-intercept (the value of Y when X = 0)</li>
+            </ul>
+            
+            <p><strong>Calculating the slope (b):</strong></p>
+            <div style="text-align: center; font-family: 'Courier New', monospace; margin: 15px 0;">
+                b = Σ[(X<sub>i</sub> - X̄)(Y<sub>i</sub> - Ȳ)] / Σ(X<sub>i</sub> - X̄)²
+            </div>
+            
+            <p><strong>Calculating the Y-intercept (a):</strong></p>
+            <div style="text-align: center; font-family: 'Courier New', monospace; margin: 15px 0;">
+                a = Ȳ - b × X̄
+            </div>
+        </div>
+        
+        <div class="application">
+            <h3>Key Concepts in Regression Analysis</h3>
+            
+            <h4>1. Coefficient of Determination (R²)</h4>
+            <p>R² is the square of the correlation coefficient (r) and represents the proportion of variance in the dependent variable that can be explained by the independent variable.</p>
+            <ul>
+                <li><strong>R² = 0.25</strong>: The independent variable explains 25% of the variation in the dependent variable</li>
+                <li><strong>R² = 0.64</strong>: The independent variable explains 64% of the variation in the dependent variable</li>
+                <li><strong>R² = 0.90</strong>: The independent variable explains 90% of the variation in the dependent variable</li>
+            </ul>
+            
+            <h4>2. Residuals</h4>
+            <p>Residuals are the differences between the actual Y values and the predicted Y values. They represent the unexplained variance in the model.</p>
+            <p>Analyzing residuals helps assess if:</p>
+            <ul>
+                <li>The relationship is truly linear</li>
+                <li>The variance is constant across all values (homoscedasticity)</li>
+                <li>The residuals are normally distributed</li>
+            </ul>
+            
+            <h4>3. Significance Testing</h4>
+            <p>To determine if the relationship between variables is statistically significant, we test whether the slope (b) is significantly different from zero:</p>
+            <ul>
+                <li><strong>Null hypothesis (H₀)</strong>: b = 0 (no relationship)</li>
+                <li><strong>Alternative hypothesis (H₁)</strong>: b ≠ 0 (relationship exists)</li>
+                <li>If p-value < 0.05, we reject H₀ and conclude that there is a significant relationship</li>
+            </ul>
+        </div>
+        
+        <div class="interpretation">
+            <h3>Application Steps in Marketing Research</h3>
+            <ol>
+                <li><strong>Define the research question</strong>: What relationship do you want to explore?</li>
+                <li><strong>Collect data</strong>: Gather paired measurements of both variables</li>
+                <li><strong>Plot the data</strong>: Create a scatter plot to visualize the relationship</li>
+                <li><strong>Calculate correlation</strong>: Determine the strength and direction of the relationship</li>
+                <li><strong>Perform regression analysis</strong>: Generate the prediction equation</li>
+                <li><strong>Assess model fit</strong>: Evaluate R² and analyze residuals</li>
+                <li><strong>Test significance</strong>: Determine if the relationship is statistically significant</li>
+                <li><strong>Apply the model</strong>: Use the equation to make predictions</li>
+                <li><strong>Interpret results</strong>: Explain the practical implications for marketing decisions</li>
+            </ol>
+        </div>
+        
+        <div class="key-terms">
+            <h3>Common Marketing Applications</h3>
+            <table>
+                <tr>
+                    <th>Marketing Question</th>
+                    <th>Independent Variable (X)</th>
+                    <th>Dependent Variable (Y)</th>
+                </tr>
+                <tr>
+                    <td>How does advertising impact sales?</td>
+                    <td>Advertising spend</td>
+                    <td>Sales revenue</td>
+                </tr>
+                <tr>
+                    <td>Does price affect demand?</td>
+                    <td>Product price</td>
+                    <td>Units sold</td>
+                </tr>
+                <tr>
+                    <td>How does customer satisfaction influence loyalty?</td>
+                    <td>Satisfaction score</td>
+                    <td>Retention rate</td>
+                </tr>
+                <tr>
+                    <td>What's the impact of display time on purchase rate?</td>
+                    <td>Seconds product is viewed</td>
+                    <td>Conversion rate</td>
+                </tr>
+                <tr>
+                    <td>How does social media engagement affect brand awareness?</td>
+                    <td>Engagement rate</td>
+                    <td>Brand recall percentage</td>
+                </tr>
+                <tr>
+                    <td>What's the relationship between email frequency and response rate?</td>
+                    <td>Emails per month</td>
+                    <td>Click-through rate</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Data
+        const data = [
+            { month: "Jan", adSpend: 10, sales: 170 },
+            { month: "Feb", adSpend: 15, sales: 180 },
+            { month: "Mar", adSpend: 20, sales: 220 },
+            { month: "Apr", adSpend: 25, sales: 250 },
+            { month: "May", adSpend: 30, sales: 270 },
+            { month: "Jun", adSpend: 35, sales: 305 },
+            { month: "Jul", adSpend: 40, sales: 325 },
+            { month: "Aug", adSpend: 45, sales: 360 },
+            { month: "Sep", adSpend: 50, sales: 390 },
+            { month: "Oct", adSpend: 55, sales: 400 },
+            { month: "Nov", adSpend: 60, sales: 410 },
+            { month: "Dec", adSpend: 65, sales: 440 }
+        ];
+        
+        // Chart dimensions and scaling
+        const chart = document.getElementById('chart');
+        const chartWidth = chart.offsetWidth;
+        const chartHeight = chart.offsetHeight;
+        const padding = { left: 50, right: 30, top: 50, bottom: 50 };
+        
+        const maxAdSpend = Math.max(...data.map(d => d.adSpend)) * 1.1;
+        const maxSales = Math.max(...data.map(d => d.sales)) * 1.1;
+        const minSales = Math.min(...data.map(d => d.sales)) * 0.9;
+        
+        // Scale functions
+        function scaleX(adSpend) {
+            return padding.left + (adSpend / maxAdSpend) * (chartWidth - padding.left - padding.right);
+        }
+        
+        function scaleY(sales) {
+            return chartHeight - padding.bottom - ((sales - minSales) / (maxSales - minSales)) * (chartHeight - padding.top - padding.bottom);
+        }
+        
+        // Add X-axis ticks
+        for (let i = 0; i <= maxAdSpend; i += 10) {
+            const tick = document.createElement('div');
+            tick.className = 'tick x-tick';
+            tick.style.left = `${scaleX(i)}px`;
+            chart.appendChild(tick);
+            
+            const label = document.createElement('div');
+            label.className = 'tick-label';
+            label.textContent = i;
+            label.style.left = `${scaleX(i)}px`;
+            label.style.bottom = '35px';
+            label.style.transform = 'translateX(-50%)';
+            chart.appendChild(label);
+        }
+        
+        // Add Y-axis ticks
+        for (let i = Math.floor(minSales / 50) * 50; i <= maxSales; i += 50) {
+            const tick = document.createElement('div');
+            tick.className = 'tick y-tick';
+            tick.style.bottom = `${chartHeight - scaleY(i)}px`;
+            chart.appendChild(tick);
+            
+            const label = document.createElement('div');
+            label.className = 'tick-label';
+            label.textContent = i;
+            label.style.left = '40px';
+            label.style.bottom = `${chartHeight - scaleY(i)}px`;
+            label.style.transform = 'translateY(50%)';
+            chart.appendChild(label);
+        }
+        
+        // Draw data points
+        data.forEach(point => {
+            const dot = document.createElement('div');
+            dot.className = 'data-point';
+            dot.style.left = `${scaleX(point.adSpend)}px`;
+            dot.style.bottom = `${chartHeight - scaleY(point.sales)}px`;
+            
+            const tooltip = document.createElement('div');
+            tooltip.className = 'data-label';
+            tooltip.textContent = point.month;
+            tooltip.style.left = `${scaleX(point.adSpend)}px`;
+            tooltip.style.bottom = `${chartHeight - scaleY(point.sales) + 15}px`;
+            
+            dot.addEventListener('mouseenter', () => {
+                tooltip.style.fontWeight = 'bold';
+                tooltip.textContent = `${point.month}: $${point.adSpend}K → $${point.sales}K`;
+            });
+            
+            dot.addEventListener('mouseleave', () => {
+                tooltip.style.fontWeight = 'normal';
+                tooltip.textContent = point.month;
+            });
+            
+            chart.appendChild(dot);
+            chart.appendChild(tooltip);
+        });
+        
+        // Calculate regression coefficients
+        const n = data.length;
+        const sumX = data.reduce((sum, d) => sum + d.adSpend, 0);
+        const sumY = data.reduce((sum, d) => sum + d.sales, 0);
+        const sumXY = data.reduce((sum, d) => sum + (d.adSpend * d.sales), 0);
+        const sumXX = data.reduce((sum, d) => sum + (d.adSpend * d.adSpend), 0);
+        
+        const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+        const intercept = (sumY - slope * sumX) / n;
+        
+        // Draw regression line
+        const line = document.createElement('div');
+        line.className = 'regression-line';
+        
+        // Start point of the line (using minimum ad spend)
+        const startX = 0;
+        const startY = intercept;
+        
+        // End point of the line (using maximum ad spend plus some padding)
+        const endX = maxAdSpend;
+        const endY = slope * endX + intercept;
+        
+        // Position and rotate the line
+        line.style.left = `${scaleX(startX)}px`;
+        line.style.bottom = `${chartHeight - scaleY(startY)}px`;
+        line.style.width = `${Math.sqrt(Math.pow(scaleX(endX) - scaleX(startX), 2) + Math.pow(scaleY(endY) - scaleY(startY), 2))}px`;
+        
+        // Calculate angle in radians and convert to degrees
+        const angle = Math.atan2(scaleY(endY) - scaleY(startY), scaleX(endX) - scaleX(startX));
+        line.style.transform = `rotate(${angle}rad)`;
+        
+        chart.appendChild(line);
+        
+        // Add prediction example
+        const predictionX = 42; // $42K ad spend
+        const predictionY = slope * predictionX + intercept;
+        
+        // Vertical prediction line
+        const vPredictionLine = document.createElement('div');
+        vPredictionLine.className = 'prediction-line';
+        vPredictionLine.style.left = `${scaleX(predictionX)}px`;
+        vPredictionLine.style.bottom = `${chartHeight - scaleY(predictionY)}px`;
+        vPredictionLine.style.top = `${scaleY(predictionY)}px`;
+        vPredictionLine.style.height = `${scaleY(predictionY) - scaleY(maxSales)}px`;
+        vPredictionLine.style.width = '0';
+        
+        // Horizontal prediction line
+        const hPredictionLine = document.createElement('div');
+        hPredictionLine.className = 'prediction-line';
+        hPredictionLine.style.left = `${scaleX(0)}px`;
+        hPredictionLine.style.bottom = `${chartHeight - scaleY(predictionY)}px`;
+        hPredictionLine.style.width = `${scaleX(predictionX) - scaleX(0)}px`;
+        hPredictionLine.style.height = '0';
+        
+        // Prediction point
+        const predictionPoint = document.createElement('div');
+        predictionPoint.className = 'data-point';
+        predictionPoint.style.backgroundColor = '#4CAF50';
+        predictionPoint.style.left = `${scaleX(predictionX)}px`;
+        predictionPoint.style.bottom = `${chartHeight - scaleY(predictionY)}px`;
+        
+        // Prediction labels
+        const xPredLabel = document.createElement('div');
+        xPredLabel.className = 'prediction-label';
+        xPredLabel.textContent = `$${predictionX}K Ad Spend`;
+        xPredLabel.style.left = `${scaleX(predictionX)}px`;
+        xPredLabel.style.bottom = `${35}px`;
+        xPredLabel.style.transform = 'translateX(-50%)';
+        
+        const yPredLabel = document.createElement('div');
+        yPredLabel.className = 'prediction-label';
+        yPredLabel.textContent = `Predicted Sales: $${Math.round(predictionY)}K`;
+        yPredLabel.style.left = `${scaleX(predictionX) + 10}px`;
+        yPredLabel.style.bottom = `${chartHeight - scaleY(predictionY)}px`;
+        yPredLabel.style.transform = 'translateY(50%)';
+        
+        chart.appendChild(vPredictionLine);
+        chart.appendChild(hPredictionLine);
+        chart.appendChild(predictionPoint);
+        chart.appendChild(xPredLabel);
+        chart.appendChild(yPredLabel);
+    </script>
+</body>
+</html>

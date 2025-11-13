@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pairwise Z-Test Calculator</title>
+
+    <!-- ✅ Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- ✅ Load React, ReactDOM, and Babel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-6">
+    <div id="root" class="w-full max-w-5xl"></div>
+
+    <script type="text/babel">
+        const PairwiseZTestCalculator = () => {
+            const [baseSize, setBaseSize] = React.useState(283);
+            const [confidenceLevel, setConfidenceLevel] = React.useState(95);
+            const [inputText, setInputText] = React.useState("");
+            const [results, setResults] = React.useState([]);
+            const [significanceNotation, setSignificanceNotation] = React.useState([]);
+
+            const loadSampleData = () => {
+                setInputText("A, 55\nB, 47\nC, 42\nD, 36\nE, 30");
+            };
+
+            const calculateZScore = (confidence) => {
+                const zScores = { 99: 2.576, 95: 1.96, 90: 1.645, 80: 1.28 };
+                return zScores[confidence] || 1.96;
+            };
+
+            const calculateSignificance = (p1, p2, n, confidence) => {
+                const prop1 = p1 / 100;
+                const prop2 = p2 / 100;
+                const se1 = Math.sqrt((prop1 * (1 - prop1)) / n);
+                const se2 = Math.sqrt((prop2 * (1 - prop2)) / n);
+                const seDiff = Math.sqrt(se1 ** 2 + se2 ** 2);
+                if (seDiff === 0) return { significant: false, zScore: 0 };
+                const zScore = Math.abs(prop1 - prop2) / seDiff;
+                const criticalZ = calculateZScore(confidence);
+                return { significant: zScore > criticalZ, zScore: zScore };
+            };
+
+            const processInput = () => {
+                const data = inputText
+                    .split("\n")
+                    .map(line => {
+                        const [name, value] = line.split(",").map(s => s.trim());
+                        return { name, value: parseFloat(value) };
+                    })
+                    .filter(item => !isNaN(item.value) && item.name)
+                    .sort((a, b) => b.value - a.value);
+
+                const comparisons = [];
+                const itemSignificance = new Map();
+
+                data.forEach((item) => {
+                    itemSignificance.set(item.name, []);
+                });
+
+                data.forEach((itemA, indexA) => {
+                    data.forEach((itemB, indexB) => {
+                        if (indexA < indexB) { 
+                            const result = calculateSignificance(
+                                itemA.value,
+                                itemB.value,
+                                baseSize,
+                                confidenceLevel
+                            );
+
+                            comparisons.push({
+                                item1: itemA.name,
+                                item2: itemB.name,
+                                value1: itemA.value,
+                                value2: itemB.value,
+                                difference: (itemA.value - itemB.value).toFixed(1),
+                                zScore: result.zScore.toFixed(2),
+                                significant: result.significant
+                            });
+
+                            if (result.significant) {
+                                const currentSig = itemSignificance.get(itemA.name);
+                                currentSig.push(itemB.name);
+                                itemSignificance.set(itemA.name, currentSig);
+                            }
+                        }
+                    });
+                });
+
+                const notation = data.map(item => ({
+                    name: item.name,
+                    value: item.value,
+                    superscript: itemSignificance.get(item.name).join(", ")
+                }));
+
+                setResults(comparisons);
+                setSignificanceNotation(notation);
+            };
+
+            return (
+                <div className="bg-white p-6 rounded-lg shadow-md">
+                    <h1 className="text-2xl font-bold text-gray-800 mb-4">Pairwise Z-Test Calculator</h1>
+							
+                    <div className="bg-blue-100 p-4 rounded mb-6">
+                        <h2 className="text-lg font-semibold text-blue-800">When to Use This Test</h2>
+                        <p className="text-sm text-gray-700 mt-2">
+                            Use this test when comparing proportions from different groups 
+                            to determine if differences are statistically significant. 
+                            Common applications include survey results, market share analysis, 
+                            and A/B testing.
+                        </p>
+                    </div>
+
+							{/* Sample Size Section */}
+							<div className="mb-6 bg-gray-100 p-4 rounded">
+							    <h2 className="text-lg font-semibold text-gray-800">Sample Size</h2>
+							    <p className="text-sm text-gray-600 mb-2">
+							        Enter the total sample size used in the test. This is the number of observations for each group.
+							    </p>
+							    <input
+							        type="number"
+							        value={baseSize}
+							        onChange={(e) => setBaseSize(Number(e.target.value))}
+							        className="w-32 border rounded p-2 text-center"
+							        min="1"
+							    />
+							</div>
+
+                    <button
+                        onClick={loadSampleData}
+                        className="mb-4 bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
+                    >
+                        Load Sample Data
+                    </button>
+
+                    <div className="mb-6">
+                        <h3 className="font-medium mb-2">Confidence Level</h3>
+                        <div className="flex gap-2">
+                            {[99, 95, 90, 80].map((level) => (
+                                <button
+                                    key={level}
+                                    onClick={() => setConfidenceLevel(level)}
+                                    className={`px-4 py-2 rounded ${
+                                        confidenceLevel === level
+                                            ? "bg-blue-500 text-white"
+                                            : "bg-gray-200"
+                                    }`}
+                                >
+                                    {level}%
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <textarea
+                        value={inputText}
+                        onChange={(e) => setInputText(e.target.value)}
+                        className="w-full h-48 border rounded p-2 font-mono"
+                        placeholder="Name, Percentage"
+                    ></textarea>
+
+                    <button
+                        onClick={processInput}
+                        className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mt-2"
+                    >
+                        Calculate
+                    </button>
+
+                    {significanceNotation.length > 0 && (
+                        <div className="mt-6">
+                            <h3 className="font-medium text-lg mb-2">Significance Notation</h3>
+                            <ul className="list-disc pl-6 text-gray-700">
+                                {significanceNotation.map((item, index) => (
+                                    <li key={index}>
+                                        {item.name}: {item.value.toFixed(1)}%
+                                        {item.superscript && <sup> ({item.superscript})</sup>}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+										
+										{results.length > 0 && (
+										    <div className="mt-6">
+										        <h3 className="font-medium text-lg mb-2">Pairwise Comparisons</h3>
+										        <table className="w-full border-collapse border border-gray-300">
+										            <thead>
+										                <tr className="bg-gray-200">
+										                    <th className="border border-gray-300 px-4 py-2">Comparison</th>
+										                    <th className="border border-gray-300 px-4 py-2">Difference</th>
+										                    <th className="border border-gray-300 px-4 py-2">Z-Score</th>
+										                    <th className="border border-gray-300 px-4 py-2">Significant?</th>
+										                </tr>
+										            </thead>
+										            <tbody>
+										                {results.map((item, index) => (
+										                    <tr key={index} className="border-t border-gray-300">
+										                        <td className="border border-gray-300 px-4 py-2">
+										                            {item.item1} vs {item.item2}
+										                        </td>
+										                        <td className="border border-gray-300 px-4 py-2 text-center">
+										                            {item.difference}%
+										                        </td>
+										                        <td className="border border-gray-300 px-4 py-2 text-center">
+										                            {item.zScore}
+										                        </td>
+										                        <td className={`border border-gray-300 px-4 py-2 text-center font-bold ${
+										                            item.significant ? "text-green-600 bg-green-100" : "text-red-600 bg-red-100"
+										                        }`}>
+										                            {item.significant ? "Yes" : "No"}
+										                        </td>
+										                    </tr>
+										                ))}
+										            </tbody>
+										        </table>
+										    </div>
+										)}
+
+                    <div className="mt-8 bg-gray-50 p-4 rounded">
+                        <h3 className="font-medium mb-4">How to Interpret Your Results</h3>
+                        <ul className="list-disc pl-5 space-y-2">
+                            <li>Items are ordered from highest to lowest percentage.</li>
+                            <li>Superscripts indicate significantly higher values.</li>
+                            <li>Higher Z-Scores indicate greater statistical difference.</li>
+                        </ul>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.createRoot(document.getElementById("root")).render(<PairwiseZTestCalculator />);
+    </script>
+</body>
+</html>

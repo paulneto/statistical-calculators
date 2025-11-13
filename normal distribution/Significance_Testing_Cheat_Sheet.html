@@ -1,0 +1,201 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Significance Testing Cheat Sheet</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.8;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        h1 {
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #2980b9;
+        }
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 10px;
+            color: #2980b9;
+        }
+        ul {
+            margin: 10px 0 20px 20px;
+            padding-left: 20px;
+        }
+        ol {
+            margin: 10px 0 20px 20px;
+            padding-left: 20px;
+        }
+        code, pre {
+            background-color: #ecf0f1;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-family: Consolas, "Courier New", monospace;
+        }
+        pre {
+            overflow: auto;
+        }
+        .highlight {
+            background-color: #dff9fb;
+            padding: 10px;
+            border-left: 4px solid #3498db;
+            margin: 10px 0;
+        }
+        .diagram {
+            text-align: center;
+            margin: 20px 0;
+        }
+        footer {
+            text-align: center;
+            font-size: 0.9em;
+            color: #95a5a6;
+            margin-top: 40px;
+            border-top: 1px solid #ecf0f1;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Significance Testing Cheat Sheet</h1>
+
+    <h2>1. What is Significance Testing?</h2>
+    <p>Significance testing helps determine whether an observed result is unusual enough to suggest that something special is happening, rather than being due to random chance.</p>
+
+    <h2>2. Key Terms</h2>
+    <ul>
+        <li><strong>Null Hypothesis (H₀):</strong> The default assumption (e.g., "There is no effect" or "The coin is fair").</li>
+        <li><strong>Alternative Hypothesis (H₁):</strong> What you are testing for (e.g., "There is an effect" or "The coin is biased").</li>
+        <li><strong>Significance Level (α):</strong> The threshold for determining significance (commonly 0.05 or 5%).</li>
+        <li><strong>P-Value:</strong> The probability of getting an outcome as extreme as your result, assuming H₀ is true.</li>
+        <li><strong>Test Statistic:</strong> A number summarizing how far your data is from the null hypothesis (e.g., a z-score).</li>
+    </ul>
+
+    <h2>3. Types of Tests</h2>
+    <ul>
+        <li><strong>One-Tailed Test:</strong> Checks for an effect in one direction (e.g., "Is the coin biased toward heads?").</li>
+        <li><strong>Two-Tailed Test:</strong> Checks for effects in both directions (e.g., "Is the coin biased toward heads or tails?").</li>
+    </ul>
+
+    <h2>4. Steps in Significance Testing</h2>
+    <ol>
+        <li><strong>State the Hypotheses:</strong>
+            <ul>
+                <li><strong>Null Hypothesis (H₀):</strong> What is considered the default (e.g., "The mean is 50").</li>
+                <li><strong>Alternative Hypothesis (H₁):</strong> What you are testing for (e.g., "The mean is not 50").</li>
+            </ul>
+        </li>
+        <li><strong>Set the Significance Level:</strong> Common choices: α = 0.05 (5%), α = 0.01 (1%).</li>
+        <li><strong>Calculate the Test Statistic:</strong> Use the formula for your specific test (e.g., z-score):
+            <pre>z = (Observed Value - Mean) / Standard Deviation</pre>
+        </li>
+        <li><strong>Find the P-Value:</strong> Use statistical tables or software to determine the p-value from your test statistic.</li>
+        <li><strong>Make a Decision:</strong>
+            <ul>
+                <li><strong>If p-value < α:</strong> Reject H₀ (result is significant).</li>
+                <li><strong>If p-value ≥ α:</strong> Fail to reject H₀ (result is not significant).</li>
+            </ul>
+        </li>
+    </ol>
+
+
+    <h2>5. Common Examples</h2>
+    <ul>
+        <li><strong>Coin Flip Experiment:</strong>
+            <ul>
+                <li><strong>H₀:</strong> The coin is fair (mean = 50 heads in 100 flips).</li>
+                <li><strong>Observed:</strong> 80 heads.</li>
+                <li><strong>Standard Deviation:</strong> SD = √(n × p × (1-p)) = 5.</li>
+                <li><strong>Z-Score:</strong> z = (80 - 50) / 5 = 6.</li>
+                <li><strong>Result:</strong> Lies in the right tail, significant at α = 0.05.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h2>6. Tips</h2>
+    <ul>
+        <li>Understand the Hypotheses: Be clear on H₀ and H₁ before starting.</li>
+        <li>Know the Difference Between One- and Two-Tailed Tests: Use two-tailed unless you have a specific directional prediction.</li>
+        <li>Practice Interpreting P-Values: A p-value is not the probability that H₀ is true; it’s the probability of your result (or more extreme) assuming H₀ is true.</li>
+        <li>Visualize Results: Draw the normal curve to see where your result lies.</li>
+    </ul>
+
+    <h2>7. Useful Formulas and Choosing the Right Test</h2>
+    <h3>Common Statistical Tests and When to Use Them:</h3>
+    <ul>
+        <li><strong>Z-Test:</strong>
+            <ul>
+                <li>Use when comparing a sample mean to a known population mean.</li>
+                <li>Assumes the population standard deviation is known.</li>
+                <li>Ideal for large sample sizes (n > 30).</li>
+            </ul>
+        </li>
+        <li><strong>T-Test:</strong>
+            <ul>
+                <li>Use when comparing means, and the population standard deviation is unknown.</li>
+                <li>Types:
+                    <ul>
+                        <li><strong>One-Sample T-Test:</strong> Compare a sample mean to a known value.</li>
+                        <li><strong>Two-Sample T-Test:</strong> Compare means between two independent groups.</li>
+                        <li><strong>Paired T-Test:</strong> Compare means of paired or matched samples (e.g., before and after measurements).</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li><strong>Chi-Square Test:</strong>
+            <ul>
+                <li>Use for categorical data to test relationships or goodness-of-fit.</li>
+                <li>Types:
+                    <ul>
+                        <li><strong>Goodness-of-Fit Test:</strong> Determine if observed proportions match expected proportions.</li>
+                        <li><strong>Test of Independence:</strong> Assess if two categorical variables are related.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li><strong>ANOVA (Analysis of Variance):</strong>
+            <ul>
+                <li>Use when comparing means across more than two groups.</li>
+                <li>Assumes the data is approximately normally distributed and variances are equal.</li>
+            </ul>
+        </li>
+        <li><strong>Regression Analysis:</strong>
+            <ul>
+                <li>Use for predicting the relationship between variables (e.g., linear regression).</li>
+                <li>Dependent variable must be continuous.</li>
+            </ul>
+        </li>
+        <li><strong>Non-Parametric Tests:</strong>
+            <ul>
+                <li>Use when data doesn’t meet normality assumptions or has small sample sizes.</li>
+                <li>Examples:
+                    <ul>
+                        <li><strong>Mann-Whitney U Test:</strong> Non-parametric alternative to the t-test.</li>
+                        <li><strong>Kruskal-Wallis Test:</strong> Non-parametric alternative to ANOVA.</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>Useful Formulas:</h3>
+    <ul>
+        <li><strong>Z-Score:</strong>
+            <pre>z = (Observed Value - Mean) / Standard Deviation</pre>
+        </li>
+        <li><strong>P-Value:</strong> Found using z-tables or software (e.g., Python, R).</li>
+    </ul>
+
+    <footer>
+        <p>Significance testing is a tool to help make decisions about data. Always interpret results in the context of your experiment!</p>
+    </footer>
+</body>
+</html>

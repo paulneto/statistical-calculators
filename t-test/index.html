@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T-Test Calculator for Marketing Research</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <style>
+        body { 
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen py-12">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const parseInputData = (input) => {
+            // Allow data to be entered as comma-separated or one value per line
+            return input
+                .split(/[\n,]+/) // Split by newlines or commas
+                .map((x) => x.trim()) // Trim spaces
+                .filter((x) => x !== "") // Remove empty entries
+                .map((x) => parseFloat(x)); // Convert to numbers
+        };
+
+        const calculateOneSampleTTest = (data, populationMean) => {
+            const parsedData = parseInputData(data);
+            const mean = parsedData.reduce((a, b) => a + b, 0) / parsedData.length;
+            const squaredDiffs = parsedData.map(d => Math.pow(d - mean, 2));
+            const variance = squaredDiffs.reduce((a, b) => a + b, 0) / (parsedData.length - 1);
+            const stdError = Math.sqrt(variance / parsedData.length);
+            const tStat = (mean - populationMean) / stdError;
+            const df = parsedData.length - 1;
+            return {
+                mean: mean.toFixed(2),
+                tStat: tStat.toFixed(3),
+                df: df,
+                significant: Math.abs(tStat) > 2.0
+            };
+        };
+
+        const calculatePairedTTest = (data1, data2) => {
+            const parsedData1 = parseInputData(data1);
+            const parsedData2 = parseInputData(data2);
+            const differences = parsedData1.map((value, index) => value - parsedData2[index]);
+            const meanDiff = differences.reduce((a, b) => a + b, 0) / differences.length;
+            const squaredDiffs = differences.map(d => Math.pow(d - meanDiff, 2));
+            const variance = squaredDiffs.reduce((a, b) => a + b, 0) / (differences.length - 1);
+            const stdError = Math.sqrt(variance / differences.length);
+            const tStat = meanDiff / stdError;
+            return {
+                meanDiff: meanDiff.toFixed(2),
+                tStat: tStat.toFixed(3),
+                significant: Math.abs(tStat) > 2.0,
+                df: differences.length - 1
+            };
+        };
+
+        const calculateIndependentTTest = (data1, data2) => {
+            const parsedData1 = parseInputData(data1);
+            const parsedData2 = parseInputData(data2);
+
+            const mean1 = parsedData1.reduce((a, b) => a + b, 0) / parsedData1.length;
+            const mean2 = parsedData2.reduce((a, b) => a + b, 0) / parsedData2.length;
+
+            const variance1 = parsedData1.reduce((a, b) => a + Math.pow(b - mean1, 2), 0) / (parsedData1.length - 1);
+            const variance2 = parsedData2.reduce((a, b) => a + Math.pow(b - mean2, 2), 0) / (parsedData2.length - 1);
+
+            const pooledVariance = ((parsedData1.length - 1) * variance1 + (parsedData2.length - 1) * variance2) / 
+                                (parsedData1.length + parsedData2.length - 2);
+
+            const tStat = (mean1 - mean2) / 
+                        Math.sqrt(pooledVariance * (1 / parsedData1.length + 1 / parsedData2.length));
+
+            const df = parsedData1.length + parsedData2.length - 2;
+
+            return {
+                mean1: mean1.toFixed(2),
+                mean2: mean2.toFixed(2),
+                difference: (mean1 - mean2).toFixed(2),
+                tStat: Math.abs(tStat).toFixed(3),
+                df: df,
+                significant: Math.abs(tStat) > 2.0
+            };
+        };
+
+        const TTestCalculator = () => {
+            const [testType, setTestType] = React.useState('independent');
+            const [sampleData, setSampleData] = React.useState({ group1: '', group2: '' });
+            const [populationMean, setPopulationMean] = React.useState('');
+            const [sampleType, setSampleType] = React.useState(null);
+
+            const sampleDatasets = {
+                campaign: {
+                    title: 'Email Campaign A/B Test',
+                    description: 'Click-through rates (%) for two different email designs',
+                    group1: [2.8, 3.1, 2.9, 3.2, 2.7, 3.0, 2.8, 3.3, 2.9, 3.0],
+                    group2: [3.5, 3.8, 3.6, 3.9, 3.4, 3.7, 3.5, 4.0, 3.6, 3.7]
+                },
+                loyalty: {
+                    title: 'Loyalty vs Non-Loyalty Spending',
+                    description: 'Average monthly spending ($) between loyalty and non-loyalty customers',
+                    group1: [150, 165, 145, 170, 155, 160, 148, 172, 158, 162],
+                    group2: [120, 125, 118, 128, 122, 127, 119, 130, 124, 126]
+                },
+                satisfaction: {
+                    title: 'Customer Satisfaction Before/After',
+                    description: 'Satisfaction scores (1-10) before and after service improvement',
+                    group1: [7.2, 6.8, 7.0, 6.5, 7.1, 6.9, 7.3, 6.7, 7.0, 6.8],
+                    group2: [8.1, 7.9, 8.2, 7.8, 8.0, 8.3, 7.9, 8.1, 8.0, 8.2]
+                },
+                satisfactionBenchmark: {
+                    title: 'Customer Satisfaction Benchmark Test',
+                    description: 'Satisfaction scores (1-10) compared to an industry benchmark of 7',
+                    data: '7.5, 8.0, 6.5, 7.8, 7.3, 6.9, 7.4, 8.2, 7.6, 6.8',
+                    populationMean: 7
+                }
+            };
+
+            const resetData = () => {
+                setSampleData({ group1: '', group2: '' });
+                setPopulationMean('');
+                setSampleType(null);
+            };
+
+            const loadSampleData = (type) => {
+                setSampleType(type);
+                if (testType === 'one-sample') {
+                    setSampleData({ group1: sampleDatasets[type].data });
+                    setPopulationMean(sampleDatasets[type].populationMean);
+                } else {
+                    setSampleData({
+                        group1: sampleDatasets[type].group1.join(', '),
+                        group2: sampleDatasets[type].group2.join(', ')
+                    });
+                }
+            };
+
+            const filteredDatasets = (() => {
+                if (testType === 'independent') {
+                    return ['campaign', 'loyalty'];
+                } else if (testType === 'paired') {
+                    return ['satisfaction'];
+                } else if (testType === 'one-sample') {
+                    return ['satisfactionBenchmark'];
+                }
+                return [];
+            })();
+
+            const results = (() => {
+                if (testType === 'one-sample') {
+                    return calculateOneSampleTTest(sampleData.group1, parseFloat(populationMean));
+                } else if (testType === 'paired') {
+                    return calculatePairedTTest(sampleData.group1, sampleData.group2);
+                } else if (testType === 'independent') {
+                    return calculateIndependentTTest(sampleData.group1, sampleData.group2);
+                }
+            })();
+
+            return (
+                <div className="w-full max-w-4xl mx-auto bg-white rounded-lg shadow p-6">
+                    <div className="mb-6">
+                        <h1 className="text-2xl font-bold">Marketing Research T-Test Calculator</h1>
+                    </div>
+
+                    <div className="mb-6">
+                        <h3 className="font-medium mb-2">Select Test Type</h3>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => {
+                                    setTestType('independent');
+                                    resetData();
+                                }}
+                                className={`px-4 py-2 rounded ${
+                                    testType === 'independent' ? 'bg-blue-500 text-white' : 'bg-gray-200'
+                                }`}
+                            >
+                                Independent Samples
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setTestType('paired');
+                                    resetData();
+                                }}
+                                className={`px-4 py-2 rounded ${
+                                    testType === 'paired' ? 'bg-blue-500 text-white' : 'bg-gray-200'
+                                }`}
+                            >
+                                Paired Samples
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setTestType('one-sample');
+                                    resetData();
+                                }}
+                                className={`px-4 py-2 rounded ${
+                                    testType === 'one-sample' ? 'bg-blue-500 text-white' : 'bg-gray-200'
+                                }`}
+                            >
+                                One-Sample Test
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="mb-6">
+                        <h3 className="font-medium mb-2">Load Sample Data</h3>
+                        <div className="flex gap-2">
+                            {filteredDatasets.map((key) => (
+                                <button
+                                    key={key}
+                                    onClick={() => loadSampleData(key)}
+                                    className={`px-4 py-2 rounded ${
+                                        sampleType === key ? 'bg-blue-500 text-white' : 'bg-gray-200'
+                                    }`}
+                                >
+                                    {sampleDatasets[key].title}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {sampleType && (
+                        <div className="mb-6 p-4 bg-gray-50 rounded">
+                            <h4 className="font-medium">{sampleDatasets[sampleType].title}</h4>
+                            <p className="text-gray-600">{sampleDatasets[sampleType].description}</p>
+                        </div>
+                    )}
+
+                    <div className="grid md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <h3 className="font-medium mb-2">Group 1 Data</h3>
+                            <textarea
+                                value={sampleData.group1}
+                                onChange={(e) => setSampleData(prev => ({ ...prev, group1: e.target.value }))}
+                                className="w-full h-32 border rounded p-2"
+                                placeholder="Enter values (comma-separated or one per line)"
+                            />
+                        </div>
+                        {testType !== 'one-sample' && (
+                            <div>
+                                <h3 className="font-medium mb-2">Group 2 Data</h3>
+                                <textarea
+                                    value={sampleData.group2}
+                                    onChange={(e) => setSampleData(prev => ({ ...prev, group2: e.target.value }))}
+                                    className="w-full h-32 border rounded p-2"
+                                    placeholder="Enter values (comma-separated or one per line)"
+                                />
+                            </div>
+                        )}
+                        {testType === 'one-sample' && (
+                            <div>
+                                <h3 className="font-medium mb-2">Population Mean</h3>
+                                <input
+                                    type="number"
+                                    value={populationMean}
+                                    onChange={(e) => setPopulationMean(e.target.value)}
+                                    className="w-full border rounded p-2"
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    {results && (
+                        <div className="mt-6">
+                            <h3 className="font-medium mb-2">Results</h3>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                {testType === 'one-sample' ? (
+                                    <>
+                                        <div className="p-4 bg-gray-50 rounded">
+                                            <div className="text-sm text-gray-600">Sample Mean</div>
+                                            <div className="text-xl font-medium">{results.mean}</div>
+                                        </div>
+                                    </>
+                                ) : testType === 'paired' ? (
+                                    <>
+                                        <div className="p-4 bg-gray-50 rounded">
+                                            <div className="text-sm text-gray-600">Mean Difference</div>
+                                            <div className="text-xl font-medium">{results.meanDiff}</div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="p-4 bg-gray-50 rounded">
+                                            <div className="text-sm text-gray-600">Group 1 Mean</div>
+                                            <div className="text-xl font-medium">{results.mean1}</div>
+                                        </div>
+                                        <div className="p-4 bg-gray-50 rounded">
+                                            <div className="text-sm text-gray-600">Group 2 Mean</div>
+                                            <div className="text-xl font-medium">{results.mean2}</div>
+                                        </div>
+                                        <div className="p-4 bg-gray-50 rounded">
+                                            <div className="text-sm text-gray-600">Mean Difference</div>
+                                            <div className="text-xl font-medium">{results.difference}</div>
+                                        </div>
+                                    </>
+                                )}
+                                <div className="p-4 bg-gray-50 rounded">
+                                    <div className="text-sm text-gray-600">T-Statistic</div>
+                                    <div className="text-xl font-medium">{results.tStat}</div>
+                                </div>
+                                <div className="p-4 bg-gray-50 rounded">
+                                    <div className="text-sm text-gray-600">Degrees of Freedom</div>
+                                    <div className="text-xl font-medium">{results.df}</div>
+                                </div>
+                                <div className="p-4 bg-gray-50 rounded">
+                                    <div className="text-sm text-gray-600">Significant at p&lt;0.05</div>
+                                    <div className={`text-xl font-medium ${
+                                        results.significant ? 'text-green-600' : 'text-red-600'
+                                    }`}>
+                                        {results.significant ? 'Yes' : 'No'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="mt-8 bg-gray-50 p-4 rounded">
+                        <h3 className="font-medium mb-4">How to Interpret Your Results</h3>
+
+                        <div className="space-y-4">
+                            <div>
+                                <h4 className="font-medium">When to Use Each Test Type:</h4>
+                                <ul className="list-disc ml-6 mt-2">
+                                    <li><strong>Independent Samples T-test:</strong> Use when comparing two separate groups (e.g., loyalty vs. non-loyalty customers).</li>
+                                    <li><strong>Paired Samples T-test:</strong> Use when comparing the same group before and after an intervention (e.g., satisfaction scores before/after service changes).</li>
+                                    <li><strong>One-Sample T-test:</strong> Use when comparing a single group to a known benchmark or population mean (e.g., satisfaction vs. an industry standard).</li>
+                                </ul>
+                            </div>
+
+                            <div>
+                                <h4 className="font-medium">Understanding the Results:</h4>
+                                <ul className="list-disc ml-6 mt-2">
+                                    <li><strong>T-Statistic:</strong> Larger values indicate stronger evidence of a real difference between groups or against the benchmark.</li>
+                                    <li><strong>Significance:</strong> If marked as significant (p&lt;0.05), we can be 95% confident the difference isn't due to chance.</li>
+                                    <li><strong>Mean Difference:</strong> For paired or independent tests, this is the difference between group means. For one-sample, it's the difference from the benchmark.</li>
+                                </ul>
+                            </div>
+
+                            <div>
+                                <h4 className="font-medium">Key Assumptions:</h4>
+                                <ul className="list-disc ml-6 mt-2">
+                                    <li>Data should be normally distributed (or sample size &gt; 30).</li>
+                                    <li>For independent t-tests: Groups should have similar variances.</li>
+                                    <li>For paired t-tests: Paired observations should be independent of other pairs.</li>
+                                    <li>For one-sample tests: The sample should be representative of the population.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<TTestCalculator />, document.getElementById('root'));
+    </script>
+</body>
+</html>

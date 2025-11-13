@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Platform Usage Comparison Calculator</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen py-12">
+    <div class="max-w-4xl mx-auto px-4">
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h1 class="text-2xl font-bold mb-4">Platform Usage Comparison Calculator</h1>
+            
+            <!-- Sample Size Input -->
+            <div class="mb-6">
+                <label class="block font-medium mb-2">Base Sample Size</label>
+                <input
+                    type="number"
+                    id="baseSize"
+                    class="border rounded px-3 py-2"
+                    value="795"
+                />
+            </div>
+
+            <!-- Confidence Level Selection -->
+            <div class="mb-6">
+                <h3 class="font-medium mb-2">Confidence Level</h3>
+                <div class="flex gap-2">
+                    <button onclick="setConfidenceLevel(99)" class="px-4 py-2 rounded bg-gray-200">99%</button>
+                    <button onclick="setConfidenceLevel(95)" class="px-4 py-2 rounded bg-blue-500 text-white">95%</button>
+                    <button onclick="setConfidenceLevel(90)" class="px-4 py-2 rounded bg-gray-200">90%</button>
+                    <button onclick="setConfidenceLevel(80)" class="px-4 py-2 rounded bg-gray-200">80%</button>
+                </div>
+            </div>
+
+            <!-- Example Data -->
+            <div class="mb-6 bg-blue-50 p-4 rounded">
+                <h3 class="font-medium mb-2">Example Dataset</h3>
+                <p class="text-sm mb-2">Compare average weekly minutes across platforms (n=795):</p>
+                <button 
+                    onclick="loadExample()"
+                    class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                >
+                    Load Example Data
+                </button>
+                <div class="grid grid-cols-2 gap-4 mt-2">
+                    <div>
+                        <p class="text-sm font-medium">Platforms:</p>
+                        <pre class="text-sm bg-white p-2 rounded">
+TikTok
+Facebook
+Instagram
+YouTube
+Twitter</pre>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium">Minutes:</p>
+                        <pre class="text-sm bg-white p-2 rounded">
+482
+275
+267
+241
+139</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Platform Inputs -->
+            <div class="mb-6 grid grid-cols-2 gap-4">
+                <div>
+                    <h3 class="font-medium mb-2">Platforms</h3>
+                    <p class="text-sm text-gray-600 mb-2">Enter one platform per line</p>
+                    <textarea
+                        id="platforms"
+                        class="w-full h-32 border rounded p-2 font-mono"
+                        placeholder="TikTok&#10;Facebook&#10;Instagram"
+                    ></textarea>
+                </div>
+                <div>
+                    <h3 class="font-medium mb-2">Minutes</h3>
+                    <p class="text-sm text-gray-600 mb-2">Enter minutes per line</p>
+                    <textarea
+                        id="minutes"
+                        class="w-full h-32 border rounded p-2 font-mono"
+                        placeholder="482&#10;275&#10;267"
+                    ></textarea>
+                </div>
+            </div>
+
+            <button 
+                onclick="calculateSignificance()"
+                class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            >
+                Calculate Significance
+            </button>
+
+            <!-- Results -->
+            <div class="mt-6">
+                <h3 class="font-medium mb-2">Results</h3>
+                <div class="overflow-x-auto">
+                    <table id="resultsTable" class="min-w-full border">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border p-2">Platform 1</th>
+                                <th class="border p-2">Minutes</th>
+                                <th class="border p-2">Platform 2</th>
+                                <th class="border p-2">Minutes</th>
+                                <th class="border p-2">Difference</th>
+                                <th class="border p-2">Z-Score</th>
+                                <th class="border p-2">Significant</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Interpretation Guide -->
+            <div class="mt-8 bg-gray-50 p-4 rounded space-y-4">
+                <h3 class="font-medium">When to Use This Calculator</h3>
+                <ul class="list-disc pl-5 space-y-1 text-sm">
+                    <li>Calculator performs z-test for comparing proportions between two populations, specifically adapted for usage metrics. For example, the difference in the average minutes between to platforms.</li>
+										<li>Specifically uses pooled standard error calculation, assumes normal distribution for large samplees</li>
+										<li>Common in tech/product analysis for comparing engagement metrics across platforms or features when you have means and sample sizes but lack raw data</li>
+										<li>Comparing average usage times between platforms</li>
+                    <li>Analyzing engagement metrics across different apps</li>
+                    <li>Evaluating time spent in different sections of your app</li>
+                    <li>Comparing daily/weekly active usage patterns</li>
+                </ul>
+
+                <div class="mt-6">
+                    <h3 class="font-medium mb-4">Z-Score Interpretation Guide</h3>
+                    <table class="min-w-full border-collapse">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="border p-2 text-left">Z-Score</th>
+                                <th class="border p-2 text-left">P-Value</th>
+                                <th class="border p-2 text-left">Interpretation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="bg-white">
+                                <td class="border p-2 font-medium">> 3.5</td>
+                                <td class="border p-2">< 0.0005</td>
+                                <td class="border p-2">Very strong evidence of difference</td>
+                            </tr>
+                            <tr class="bg-gray-50">
+                                <td class="border p-2 font-medium">2.6 - 3.4</td>
+                                <td class="border p-2">0.001 - 0.01</td>
+                                <td class="border p-2">Strong evidence of difference</td>
+                            </tr>
+                            <tr class="bg-white">
+                                <td class="border p-2 font-medium">2.0 - 2.5</td>
+                                <td class="border p-2">0.01 - 0.05</td>
+                                <td class="border p-2">Good evidence of difference</td>
+                            </tr>
+                            <tr class="bg-gray-50">
+                                <td class="border p-2 font-medium">< 2.0</td>
+                                <td class="border p-2">> 0.05</td>
+                                <td class="border p-2">Weak or no evidence of difference</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let confidenceLevel = 95;
+
+        function setConfidenceLevel(level) {
+            confidenceLevel = level;
+            document.querySelectorAll('[onclick^="setConfidenceLevel"]').forEach(button => {
+                button.className = button.onclick.toString().includes(level.toString()) 
+                    ? 'px-4 py-2 rounded bg-blue-500 text-white'
+                    : 'px-4 py-2 rounded bg-gray-200';
+            });
+        }
+
+        function loadExample() {
+            document.getElementById('baseSize').value = "795";
+            document.getElementById('platforms').value = 
+`TikTok
+Facebook
+Instagram
+YouTube
+Twitter`;
+            document.getElementById('minutes').value = 
+`482
+275
+267
+241
+139`;
+            calculateSignificance();
+        }
+
+        function getSignificanceThreshold(confidence) {
+            const thresholds = {
+                99: 2.576,
+                95: 1.96,
+                90: 1.645,
+                80: 1.28
+            };
+            return thresholds[confidence];
+        }
+
+        function calculateZScore(minutes1, minutes2, n) {
+            const p1 = minutes1;
+            const p2 = minutes2;
+            const se = Math.sqrt(((p1/n) * (1-p1/n) + (p2/n) * (1-p2/n)) / n);
+            return (p1 - p2) / (Math.sqrt(n) * se);
+        }
+
+        function calculateSignificance() {
+            const baseSize = parseInt(document.getElementById('baseSize').value);
+            const platforms = document.getElementById('platforms').value.split('\n')
+                .map(p => p.trim())
+                .filter(p => p.length > 0);
+            const minutes = document.getElementById('minutes').value.split('\n')
+                .map(m => parseInt(m.trim()))
+                .filter(m => !isNaN(m));
+
+            const resultsBody = document.getElementById('resultsBody');
+            resultsBody.innerHTML = '';
+
+            for (let i = 0; i < platforms.length; i++) {
+                for (let j = i + 1; j < platforms.length; j++) {
+                    const zScore = calculateZScore(minutes[i], minutes[j], baseSize);
+                    const isSignificant = Math.abs(zScore) > getSignificanceThreshold(confidenceLevel);
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="border p-2">${platforms[i]}</td>
+                        <td class="border p-2">${minutes[i]}</td>
+                        <td class="border p-2">${platforms[j]}</td>
+                        <td class="border p-2">${minutes[j]}</td>
+                        <td class="border p-2">${Math.abs(minutes[i] - minutes[j])}</td>
+                        <td class="border p-2">${Math.abs(zScore).toFixed(2)}</td>
+                        <td class="border p-2">
+                            <span class="px-2 py-1 rounded ${isSignificant ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                                ${isSignificant ? 'Yes' : 'No'}
+                            </span>
+                        </td>
+                    `;
+                    resultsBody.appendChild(row);
+                }
+            }
+        }
+    </script>
+</body>
+</html>

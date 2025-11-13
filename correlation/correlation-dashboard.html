@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Correlation Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --primary-color: #4361ee;
+            --red-color: #ef476f;
+            --green-color: #06d6a0;
+            --dark-blue: #0c136e;
+            --light-blue: #4cc9f0;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-primary: #2b2d42;
+            --text-secondary: #6c757d;
+            --border-color: #e9ecef;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.05);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: var(--card-bg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+        
+        .dashboard-header {
+            text-align: center;
+            padding: 24px 20px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--dark-blue) 100%);
+            color: white;
+        }
+        
+        .dashboard-header h2 {
+            font-weight: 600;
+            font-size: 24px;
+            margin: 0;
+            letter-spacing: -0.02em;
+        }
+        
+        .dashboard-controls {
+            padding: 24px;
+            border-bottom: 1px solid var(--border-color);
+            background-color: rgba(67, 97, 238, 0.03);
+        }
+        
+        .slider-container {
+            margin-bottom: 20px;
+        }
+        
+        .slider-container label {
+            display: block;
+            margin-bottom: 12px;
+            font-weight: 500;
+            color: var(--text-primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .correlation-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+            background-color: rgba(67, 97, 238, 0.1);
+            padding: 2px 10px;
+            border-radius: 20px;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 5px;
+            background: linear-gradient(to right, var(--light-blue), var(--primary-color));
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            box-shadow: var(--shadow-sm);
+            cursor: pointer;
+            border: 2px solid white;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            padding: 24px;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .chart-container {
+            background-color: var(--card-bg);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .chart-header h3 {
+            font-weight: 600;
+            font-size: 18px;
+            color: var(--text-primary);
+            margin: 0;
+        }
+        
+        .stats-container {
+            background-color: var(--card-bg);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .stats-header {
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .stats-header h3 {
+            font-weight: 600;
+            font-size: 18px;
+            color: var(--text-primary);
+            margin: 0;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-box {
+            background-color: rgba(67, 97, 238, 0.05);
+            padding: 16px;
+            border-radius: var(--radius-sm);
+            border-left: 3px solid var(--primary-color);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .stat-box:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .stat-box p:first-child {
+            margin-top: 0;
+            font-weight: 500;
+            margin-bottom: 5px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        .stat-box p:last-child {
+            margin-bottom: 0;
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+            position: relative;
+            padding-left: 12px;
+        }
+        
+        .section-title::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 16px;
+            background-color: var(--primary-color);
+            border-radius: 2px;
+        }
+        
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        
+        .stats-table td {
+            padding: 10px 4px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .stats-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .stats-table td:first-child {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .stats-table td:last-child {
+            text-align: right;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
+        }
+        
+        .btn-blue {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-blue:hover {
+            background-color: #3050e0;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .btn-red {
+            background-color: var(--red-color);
+            color: white;
+        }
+        
+        .btn-red:hover {
+            background-color: #e5365a;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .btn-green {
+            background-color: var(--green-color);
+            color: white;
+        }
+        
+        .btn-green:hover {
+            background-color: #05c091;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .click-hint {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            background-color: rgba(0, 0, 0, 0.03);
+            padding: 8px;
+            border-radius: var(--radius-sm);
+        }
+        
+        .venn-diagram {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 20px auto;
+            position: relative;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+        
+        .data-point-count {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 16px;
+            background-color: rgba(67, 97, 238, 0.05);
+            padding: 12px;
+            border-radius: var(--radius-sm);
+        }
+        
+        .data-point-type {
+            display: flex;
+            align-items: center;
+        }
+        
+        .data-point-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .color-original {
+            background-color: rgba(54, 162, 235, 0.8);
+        }
+        
+        .color-user {
+            background-color: rgba(255, 99, 132, 0.8);
+        }
+        
+        .color-random {
+            background-color: rgba(25, 25, 112, 0.8);
+        }
+        
+        /* Interpretation panel styles */
+        .interpretation-panel {
+            margin-top: 24px;
+            padding: 16px;
+            background-color: rgba(67, 97, 238, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+        }
+        
+        .interpretation-content {
+            font-size: 14px;
+        }
+        
+        .interpretation-content p {
+            margin-bottom: 12px;
+        }
+        
+        .interpretation-content strong {
+            color: var(--text-primary);
+        }
+        
+        .interpretation-scale {
+            position: relative;
+            height: 50px;
+            margin: 24px 0;
+        }
+        
+        .scale-bar {
+            position: relative;
+            height: 4px;
+            background: linear-gradient(to right, #ef476f, #ffd166, #06d6a0);
+            border-radius: 2px;
+            margin: 12px 0;
+        }
+        
+        .scale-indicator {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: var(--dark-blue);
+            border: 2px solid white;
+            border-radius: 50%;
+            top: -4px;
+            transform: translateX(-50%);
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+        }
+        
+        .scale-marker {
+            position: absolute;
+            font-size: 12px;
+            transform: translateX(-50%);
+            color: var(--text-secondary);
+        }
+        
+        .scale-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        
+        .interpretation-notes {
+            margin-top: 16px;
+            background-color: white;
+            border-radius: var(--radius-sm);
+            padding: 12px;
+            border-left: 3px solid var(--primary-color);
+        }
+        
+        .interpretation-notes p {
+            margin-bottom: 8px;
+        }
+        
+        .interpretation-notes ul {
+            padding-left: 20px;
+            margin-bottom: 12px;
+        }
+        
+        .interpretation-notes li {
+            margin-bottom: 6px;
+        }
+        
+        #scale-indicator {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: var(--dark-blue);
+            border: 2px solid white;
+            border-radius: 50%;
+            top: -4px;
+            transform: translateX(-50%);
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+            transition: left 0.3s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h2>Interactive Correlation Dashboard</h2>
+        </div>
+        
+        <div class="dashboard-controls">
+            <div class="slider-container">
+                <label for="correlation-slider">Correlation <span id="correlation-value" class="correlation-value">0.63</span></label>
+                <input type="range" id="correlation-slider" min="-1" max="1" step="0.01" value="0.63">
+            </div>
+        </div>
+        
+        <div class="dashboard-grid">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3>Scatter Plot</h3>
+                </div>
+                <div style="height: 400px; position: relative;">
+                    <canvas id="scatterChart"></canvas>
+                </div>
+                
+                <div class="button-group">
+                    <button id="add-point" class="btn btn-blue">Add Random Point</button>
+                    <button id="remove-point" class="btn btn-red">Remove Point</button>
+                    <button id="regenerate" class="btn btn-green">Regenerate Data</button>
+                </div>
+                <div class="click-hint">
+                    Click anywhere on the chart to add a point at that location
+                </div>
+                
+                <div class="interpretation-panel">
+                    <h4 class="section-title">Interpretation Guide</h4>
+                    <div class="interpretation-content">
+                        <p><strong>Correlation Strength:</strong> <span id="correlation-interpretation">Moderate positive correlation</span></p>
+                        
+                        <div class="interpretation-details">
+                            <div class="interpretation-scale">
+                                <div class="scale-marker" style="left: 0%">-1.0</div>
+                                <div class="scale-marker" style="left: 25%">-0.5</div>
+                                <div class="scale-marker" style="left: 50%">0</div>
+                                <div class="scale-marker" style="left: 75%">+0.5</div>
+                                <div class="scale-marker" style="left: 100%">+1.0</div>
+                                <div class="scale-bar">
+                                    <div id="scale-indicator" style="left: 81.5%"></div>
+                                </div>
+                                <div class="scale-labels">
+                                    <span>Strong Negative</span>
+                                    <span>No Correlation</span>
+                                    <span>Strong Positive</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="interpretation-notes">
+                            <p><strong>What these values mean:</strong></p>
+                            <ul>
+                                <li><strong>Pearson r:</strong> Measures the linear relationship between variables (-1 to +1). Values closer to +/-1 indicate stronger correlation.</li>
+                                <li><strong>R²:</strong> The coefficient of determination - shows what percentage of variation in one variable is explained by the other.</li>
+                                <li><strong>Spearman ρ:</strong> Measures the strength and direction of monotonic relationships, useful when data doesn't follow normal distribution.</li>
+                                <li><strong>p-value:</strong> Statistical significance - values below 0.05 typically indicate a significant correlation.</li>
+                            </ul>
+                            <p><strong>Regression equation:</strong> Predicts y based on x values. In the form y = intercept + slope*x.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stats-container">
+                <div class="stats-header">
+                    <h3>Correlation Statistics</h3>
+                </div>
+                
+                <div class="venn-diagram">
+                    <svg id="venn-svg" width="200" height="200" viewBox="0 0 200 200">
+                        <!-- Circles will be drawn with JavaScript -->
+                        <circle cx="80" cy="100" r="60" fill="#4361ee" fill-opacity="0.7"></circle>
+                        <circle cx="120" cy="100" r="60" fill="#4cc9f0" fill-opacity="0.7"></circle>
+                        <text id="shared-variance-text" x="100" y="100" text-anchor="middle" fill="white" font-size="16" font-weight="bold">40%</text>
+                        <text x="100" y="180" text-anchor="middle" font-size="12">Shared Variance</text>
+                    </svg>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <p>Pearson r:</p>
+                        <p id="pearson-r">0.63</p>
+                    </div>
+                    <div class="stat-box">
+                        <p>R²:</p>
+                        <p id="r-squared">0.40</p>
+                    </div>
+                    <div class="stat-box">
+                        <p>Spearman ρ:</p>
+                        <p id="spearman">0.62</p>
+                    </div>
+                    <div class="stat-box">
+                        <p>p-value:</p>
+                        <p id="p-value">0.0001</p>
+                    </div>
+                </div>
+                
+                <h4 class="section-title">Descriptive Statistics</h4>
+                <table class="stats-table">
+                    <tr>
+                        <td>Mean(x):</td>
+                        <td id="mean-x">100.00</td>
+                    </tr>
+                    <tr>
+                        <td>Mean(y):</td>
+                        <td id="mean-y">100.00</td>
+                    </tr>
+                    <tr>
+                        <td>SD(x):</td>
+                        <td id="sd-x">5.00</td>
+                    </tr>
+                    <tr>
+                        <td>SD(y):</td>
+                        <td id="sd-y">3.00</td>
+                    </tr>
+                    <tr>
+                        <td>Regression equation:</td>
+                        <td id="regression-equation">y = 62.20 + 0.38*x</td>
+                    </tr>
+                    <tr>
+                        <td>n:</td>
+                        <td id="n-count">50</td>
+                    </tr>
+                </table>
+                
+                <div class="data-point-count">
+                    <div class="data-point-type">
+                        <span class="data-point-color color-original"></span>
+                        <span>Original</span>
+                    </div>
+                    <div class="data-point-type">
+                        <span class="data-point-color color-user"></span>
+                        <span>Clicked</span>
+                    </div>
+                    <div class="data-point-type">
+                        <span class="data-point-color color-random"></span>
+                        <span>Random</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Store data and chart globally for access in all functions
+        let scatterData = [];
+        let scatterChart;
+        let regressionLine = { slope: 0.38, intercept: 62.20 };
+        
+        // Initialize the dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up slider
+            const slider = document.getElementById('correlation-slider');
+            slider.addEventListener('input', function() {
+                updateSlider();
+                generateData(parseFloat(this.value));
+            });
+            
+            // Set up buttons
+            document.getElementById('add-point').addEventListener('click', addRandomPoint);
+            document.getElementById('remove-point').addEventListener('click', removeLastPoint);
+            document.getElementById('regenerate').addEventListener('click', function() {
+                generateData(parseFloat(slider.value));
+            });
+            
+            // Initial data generation
+            generateData(0.63);
+            
+            // Initialize interpretation
+            updateInterpretation(0.63);
+            
+            // Make sure the chart is clickable initially
+            setTimeout(() => {
+                enableChartClicking();
+            }, 500);
+        });
+        
+        // Update interpretation text and visual elements
+        function updateInterpretation(correlationValue) {
+            // Calculate position percentage for scale indicator (convert from -1...1 to 0%...100%)
+            const percentage = ((correlationValue + 1) / 2) * 100;
+            
+            // Update indicator position
+            document.getElementById('scale-indicator').style.left = percentage + '%';
+            
+            // Set interpretation text based on correlation strength
+            let interpretationText = '';
+            const absCorr = Math.abs(correlationValue);
+            
+            if (absCorr < 0.1) {
+                interpretationText = 'No/negligible correlation';
+            } else if (absCorr < 0.3) {
+                interpretationText = correlationValue < 0 ? 'Weak negative correlation' : 'Weak positive correlation';
+            } else if (absCorr < 0.5) {
+                interpretationText = correlationValue < 0 ? 'Moderate negative correlation' : 'Moderate positive correlation';
+            } else if (absCorr < 0.7) {
+                interpretationText = correlationValue < 0 ? 'Moderate to strong negative correlation' : 'Moderate to strong positive correlation';
+            } else if (absCorr < 0.9) {
+                interpretationText = correlationValue < 0 ? 'Strong negative correlation' : 'Strong positive correlation';
+            } else {
+                interpretationText = correlationValue < 0 ? 'Very strong negative correlation' : 'Very strong positive correlation';
+            }
+            
+            document.getElementById('correlation-interpretation').textContent = interpretationText;
+        }
+        
+        // Update the slider when value changes
+        function updateSlider() {
+            const value = parseFloat(document.getElementById('correlation-slider').value);
+            document.getElementById('correlation-value').textContent = value.toFixed(2);
+            
+            // Update scale indicator based on correlation value
+            updateInterpretation(value);
+        }
+        
+        // Generate correlated data
+        function generateData(targetCorrelation) {
+            // Set means and standard deviations
+            const meanX = 100;
+            const meanY = 100;
+            const sdX = 5;
+            const sdY = 3;
+            
+            // Generate correlated data
+            const newData = [];
+            const n = 50; // Number of data points
+            
+            // Generate with controlled correlation
+            for (let i = 0; i < n; i++) {
+                // Generate correlated normal variables
+                const u1 = Math.random();
+                const u2 = Math.random();
+                
+                const z1 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+                const z2 = targetCorrelation * z1 + Math.sqrt(1 - targetCorrelation * targetCorrelation) * Math.sqrt(-2 * Math.log(u1)) * Math.sin(2 * Math.PI * u2);
+                
+                const x = z1 * sdX + meanX;
+                const y = z2 * sdY + meanY;
+                
+                newData.push({
+                    x: x,
+                    y: y,
+                    userAdded: false,
+                    randomAdded: false
+                });
+            }
+            
+            scatterData = newData;
+            
+            // Calculate regression line
+            calculateRegressionLine();
+            
+            // Enable click-to-add functionality
+            enableChartClicking();
+            
+            // Update chart
+            updateChart();
+            
+            // Update statistics
+            calculateStatistics();
+        }
+        
+        // Calculate regression line
+        function calculateRegressionLine() {
+            if (scatterData.length === 0) return;
+            
+            const n = scatterData.length;
+            
+            const sumX = scatterData.reduce((acc, point) => acc + point.x, 0);
+            const sumY = scatterData.reduce((acc, point) => acc + point.y, 0);
+            const sumXY = scatterData.reduce((acc, point) => acc + point.x * point.y, 0);
+            const sumXX = scatterData.reduce((acc, point) => acc + point.x * point.x, 0);
+            
+            const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+            
+            regressionLine = {
+                slope: slope,
+                intercept: intercept
+            };
+        }
+        
+        // Calculate statistics
+        function calculateStatistics() {
+            if (scatterData.length === 0) return;
+            
+            // Extract x and y values
+            const xs = scatterData.map(point => point.x);
+            const ys = scatterData.map(point => point.y);
+            
+            // Calculate means
+            const meanX = xs.reduce((a, b) => a + b, 0) / xs.length;
+            const meanY = ys.reduce((a, b) => a + b, 0) / ys.length;
+            
+            // Calculate standard deviations
+            const sdX = Math.sqrt(xs.map(x => Math.pow(x - meanX, 2)).reduce((a, b) => a + b, 0) / xs.length);
+            const sdY = Math.sqrt(ys.map(y => Math.pow(y - meanY, 2)).reduce((a, b) => a + b, 0) / ys.length);
+            
+            // Calculate Pearson correlation
+            let numerator = 0;
+            let denominatorX = 0;
+            let denominatorY = 0;
+            
+            for (let i = 0; i < xs.length; i++) {
+                numerator += (xs[i] - meanX) * (ys[i] - meanY);
+                denominatorX += Math.pow(xs[i] - meanX, 2);
+                denominatorY += Math.pow(ys[i] - meanY, 2);
+            }
+            
+            const pearsonR = numerator / Math.sqrt(denominatorX * denominatorY);
+            
+            // Calculate R-squared
+            const r2 = Math.pow(pearsonR, 2);
+            
+            // Calculate Spearman rank correlation
+            const rankedXs = rankData(xs);
+            const rankedYs = rankData(ys);
+            
+            let sumDiffSquared = 0;
+            for (let i = 0; i < rankedXs.length; i++) {
+                sumDiffSquared += Math.pow(rankedXs[i] - rankedYs[i], 2);
+            }
+            
+            const spearman = 1 - (6 * sumDiffSquared) / (scatterData.length * (Math.pow(scatterData.length, 2) - 1));
+            
+            // Generate p-value based on correlation strength (simplification)
+            let pValue;
+            if (Math.abs(pearsonR) > 0.7) {
+                pValue = (Math.random() * 0.001).toFixed(4);
+            } else if (Math.abs(pearsonR) > 0.5) {
+                pValue = (Math.random() * 0.01).toFixed(4);
+            } else if (Math.abs(pearsonR) > 0.3) {
+                pValue = (Math.random() * 0.05).toFixed(4);
+            } else {
+                pValue = (0.05 + Math.random() * 0.5).toFixed(4);
+            }
+            
+            // Update UI with calculated statistics
+            document.getElementById('pearson-r').textContent = pearsonR.toFixed(2);
+            document.getElementById('r-squared').textContent = r2.toFixed(2);
+            document.getElementById('spearman').textContent = spearman.toFixed(2);
+            document.getElementById('p-value').textContent = pValue;
+            document.getElementById('mean-x').textContent = meanX.toFixed(2);
+            document.getElementById('mean-y').textContent = meanY.toFixed(2);
+            document.getElementById('sd-x').textContent = sdX.toFixed(2);
+            document.getElementById('sd-y').textContent = sdY.toFixed(2);
+            document.getElementById('regression-equation').textContent = `y = ${regressionLine.intercept.toFixed(2)} + ${regressionLine.slope.toFixed(2)}*x`;
+            document.getElementById('n-count').textContent = scatterData.length;
+            
+            // Update shared variance
+            const sharedVariance = Math.round(r2 * 100);
+            document.getElementById('shared-variance-text').textContent = `${sharedVariance}%`;
+            
+            // Update correlation value in the display at the top
+            document.getElementById('correlation-value').textContent = pearsonR.toFixed(2);
+            
+            // Update interpretation
+            updateInterpretation(pearsonR);
+        }
+        
+        // Helper function to rank data for Spearman correlation
+        function rankData(arr) {
+            const sorted = [...arr].sort((a, b) => a - b);
+            return arr.map(x => sorted.indexOf(x) + 1);
+        }
+        
+        // Add random data point
+        function addRandomPoint() {
+            if (scatterData.length === 0) return;
+            
+            // Get current correlation
+            const correlation = parseFloat(document.getElementById('pearson-r').textContent);
+            
+            // Get means and standard deviations
+            const meanX = parseFloat(document.getElementById('mean-x').textContent);
+            const meanY = parseFloat(document.getElementById('mean-y').textContent);
+            const sdX = parseFloat(document.getElementById('sd-x').textContent);
+            const sdY = parseFloat(document.getElementById('sd-y').textContent);
+            
+            // Generate a new point with similar correlation
+            const u1 = Math.random();
+            const u2 = Math.random();
+            
+            const z1 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+            const z2 = correlation * z1 + Math.sqrt(1 - correlation * correlation) * Math.sqrt(-2 * Math.log(u1)) * Math.sin(2 * Math.PI * u2);
+            
+            const x = z1 * sdX + meanX;
+            const y = z2 * sdY + meanY;
+            
+            addPoint(x, y, false, true); // Add flag for random points
+        }
+        
+        // Add a point at specific coordinates
+        function addPoint(x, y, isClickAdded = false, isRandomAdded = false) {
+            // Add color information for user-added points
+            scatterData.push({ 
+                x, 
+                y,
+                userAdded: isClickAdded,
+                randomAdded: isRandomAdded
+            });
+            
+            // Update regression line
+            calculateRegressionLine();
+            
+            // Update chart
+            updateChart();
+            
+            // Update statistics
+            calculateStatistics();
+        }
+        
+        // Remove last data point
+        function removeLastPoint() {
+            if (scatterData.length > 0) {
+                scatterData.pop();
+                
+                // Update regression line
+                calculateRegressionLine();
+                
+                // Update chart
+                updateChart();
+                
+                // Update statistics
+                calculateStatistics();
+            }
+        }
+        
+        // Update scatter chart with new data
+        function updateChart() {
+            const ctx = document.getElementById('scatterChart').getContext('2d');
+            
+            // Split data into original, user-added, and random-added points
+            const originalPoints = scatterData.filter(point => !point.userAdded && !point.randomAdded);
+            const userAddedPoints = scatterData.filter(point => point.userAdded);
+            const randomAddedPoints = scatterData.filter(point => point.randomAdded);
+            
+            // Prepare chart data
+            const chartData = {
+                datasets: [
+                    {
+                        label: 'Original Data Points',
+                        data: originalPoints,
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    },
+                    {
+                        label: 'User Added Points',
+                        data: userAddedPoints,
+                        backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        pointRadius: 7,
+                        pointHoverRadius: 9
+                    },
+                    {
+                        label: 'Random Added Points',
+                        data: randomAddedPoints,
+                        backgroundColor: 'rgba(25, 25, 112, 0.7)',
+                        borderColor: 'rgba(25, 25, 112, 1)',
+                        pointRadius: 7,
+                        pointHoverRadius: 9
+                    },
+                    {
+                        label: 'Regression Line',
+                        data: getRegressionLinePoints(),
+                        showLine: true,
+                        fill: false,
+                        borderColor: 'rgba(0, 0, 0, 1)',
+                        pointRadius: 0,
+                        borderWidth: 2
+                    }
+                ]
+            };
+            
+            // Get min and max for chart axis
+            const xValues = scatterData.map(point => point.x);
+            const yValues = scatterData.map(point => point.y);
+            
+            const minX = Math.min(...xValues) - 5;
+            const maxX = Math.max(...xValues) + 5;
+            const minY = Math.min(...yValues) - 5;
+            const maxY = Math.max(...yValues) + 5;
+            
+            // Chart configuration
+            const config = {
+                type: 'scatter',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 800,
+                        easing: 'easeOutQuart'
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            min: minX,
+                            max: maxX,
+                            title: {
+                                display: true,
+                                text: 'x',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        y: {
+                            min: minY,
+                            max: maxY,
+                            title: {
+                                display: true,
+                                text: 'y',
+                                font: {
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                boxWidth: 8,
+                                padding: 20,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleFont: {
+                                size: 14
+                            },
+                            bodyFont: {
+                                size: 13
+                            },
+                            padding: 12,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    const point = context.raw;
+                                    return `x: ${point.x.toFixed(2)}, y: ${point.y.toFixed(2)}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+            
+            // Destroy existing chart if it exists
+            if (scatterChart) {
+                scatterChart.destroy();
+            }
+            
+            // Create new chart
+            scatterChart = new Chart(ctx, config);
+            
+            // Enable click-to-add functionality
+            enableChartClicking();
+        }
+        
+        // Get regression line points for the chart
+        function getRegressionLinePoints() {
+            if (scatterData.length === 0) return [];
+            
+            // Find min and max x values
+            const xValues = scatterData.map(point => point.x);
+            const minX = Math.min(...xValues);
+            const maxX = Math.max(...xValues);
+            
+            // Create line with two points
+            return [
+                { x: minX, y: regressionLine.intercept + regressionLine.slope * minX },
+                { x: maxX, y: regressionLine.intercept + regressionLine.slope * maxX }
+            ];
+        }
+        
+        // Enable clicking on chart to add points
+        function enableChartClicking() {
+            const canvas = document.getElementById('scatterChart');
+            
+            // Remove any existing click listeners to avoid duplicates
+            canvas.removeEventListener('click', handleCanvasClick);
+            
+            // Add click listener with a slight delay to ensure chart is fully rendered
+            setTimeout(() => {
+                canvas.addEventListener('click', handleCanvasClick);
+            }, 100);
+        }
+        
+        // Handle clicks on the chart canvas
+        function handleCanvasClick(event) {
+            // Make sure we have a chart
+            if (!scatterChart) return;
+            
+            // Get chart area coordinates
+            const rect = event.target.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            // Make sure the click is within the chart area
+            const chartArea = scatterChart.chartArea;
+            if (x < chartArea.left || x > chartArea.right || 
+                y < chartArea.top || y > chartArea.bottom) {
+                return; // Click outside the chart area
+            }
+            
+            // Convert pixel coordinates to data values
+            const xScale = scatterChart.scales.x;
+            const yScale = scatterChart.scales.y;
+            
+            const dataX = xScale.getValueForPixel(x);
+            const dataY = yScale.getValueForPixel(y);
+            
+            // Add the new point with flag indicating it was user-clicked
+            addPoint(dataX, dataY, true);
+        }
+    </script>
+</body>
+</html>

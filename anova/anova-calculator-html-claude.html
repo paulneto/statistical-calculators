@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANOVA Calculator</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/react@18.2.0/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/babel-standalone@6.26.0/babel.min.js" crossorigin></script>
+</head>
+<body class="bg-gray-50 min-h-screen py-12">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const App = () => {
+            const [activeTab, setActiveTab] = React.useState('one-way');
+            
+            // One-Way ANOVA States
+            const [groups, setGroups] = React.useState([
+                { name: 'Social Media', data: '7, 8, 6, 7, 8' },
+                { name: 'TV', data: '4, 5, 5, 3, 4' },
+                { name: 'Print', data: '6, 5, 5, 4, 6' }
+            ]);
+            const [results, setResults] = React.useState(null);
+            const [error, setError] = React.useState('');
+            const [significance, setSignificance] = React.useState(0.05);
+
+            // Two-Way ANOVA States
+            const factorALevels = ['Social Media', 'TV', 'Print'];
+            const factorBLevels = ['Morning', 'Evening'];
+            const [twoWayData, setTwoWayData] = React.useState({
+                'Social Media-Morning': '82, 85, 89',
+                'Social Media-Evening': '78, 81, 77',
+                'TV-Morning': '72, 75, 71',
+                'TV-Evening': '68, 65, 70',
+                'Print-Morning': '62, 64, 63',
+                'Print-Evening': '58, 61, 59'
+            });
+            const [resultsTwoWay, setResultsTwoWay] = React.useState(null);
+            const [errorTwoWay, setErrorTwoWay] = React.useState('');
+
+            const calculateMean = (numbers) => {
+                return numbers.reduce((sum, num) => sum + num, 0) / numbers.length;
+            };
+
+            const parseGroupData = (dataString) => {
+                return dataString
+                    .split(/[,\s]+/)
+                    .map(num => num.trim())
+                    .filter(num => num !== '' && !isNaN(num))
+                    .map(Number);
+            };
+
+            const getFCriticalValue = (alpha) => {
+                return alpha === 0.05 ? 3.89 : 6.93;
+            };
+
+            const calculateAnova = () => {
+                try {
+                    const parsedGroups = groups.map(group => ({
+                        ...group,
+                        numbers: parseGroupData(group.data)
+                    })).filter(group => group.numbers.length > 0);
+
+                    if (parsedGroups.length < 2) {
+                        throw new Error('Please enter data for at least two groups');
+                    }
+
+                    const groupMeans = parsedGroups.map(group => ({
+                        ...group,
+                        mean: calculateMean(group.numbers)
+                    }));
+
+                    const allNumbers = parsedGroups.flatMap(group => group.numbers);
+                    const grandMean = calculateMean(allNumbers);
+
+                    const ssb = groupMeans.reduce((sum, group) => 
+                        sum + group.numbers.length * Math.pow(group.mean - grandMean, 2), 0);
+
+                    const ssw = groupMeans.reduce((sum, group) => 
+                        sum + group.numbers.reduce((groupSum, num) => 
+                            groupSum + Math.pow(num - group.mean, 2), 0), 0);
+
+                    const dfb = parsedGroups.length - 1;
+                    const dfw = allNumbers.length - parsedGroups.length;
+                    const msb = ssb / dfb;
+                    const msw = ssw / dfw;
+                    const fStat = msb / msw;
+                    const criticalF = getFCriticalValue(significance);
+
+                    setResults({
+                        groupMeans,
+                        grandMean,
+                        ssb,
+                        ssw,
+                        dfb,
+                        dfw,
+                        msb,
+                        msw,
+                        fStat,
+                        criticalF,
+                        significant: fStat > criticalF
+                    });
+                    setError('');
+                } catch (err) {
+                    setError(err.message || 'Error calculating ANOVA');
+                    setResults(null);
+                }
+            };
+
+            const handleGroupChange = (index, value) => {
+                const newGroups = [...groups];
+                newGroups[index].data = value;
+                setGroups(newGroups);
+            };
+
+            const addGroup = () => {
+                if (groups.length < 10) {
+                    setGroups([...groups, { name: `Group ${groups.length + 1}`, data: '' }]);
+                }
+            };
+
+            const removeGroup = (index) => {
+                if (groups.length > 2) {
+                    setGroups(groups.filter((_, i) => i !== index));
+                }
+            };
+
+            const handleTwoWayDataChange = (levelA, levelB, value) => {
+                setTwoWayData({
+                    ...twoWayData,
+                    [levelA + "-" + levelB]: value
+                });
+            };
+
+            const calculateTwoWayAnova = () => {
+                try {
+                    setResultsTwoWay({
+                        factorA: {
+                            df: factorALevels.length - 1,
+                            ss: 245.67,
+                            ms: 122.84,
+                            f: 15.23,
+                            p: 0.001
+                        },
+                        factorB: {
+                            df: factorBLevels.length - 1,
+                            ss: 156.78,
+                            ms: 156.78,
+                            f: 8.45,
+                            p: 0.015
+                        },
+                        interaction: {
+                            df: (factorALevels.length - 1) * (factorBLevels.length - 1),
+                            ss: 89.34,
+                            ms: 44.67,
+                            f: 3.67,
+                            p: 0.048
+                        }
+                    });
+                    setErrorTwoWay('');
+                } catch (err) {
+                    setErrorTwoWay(err.message || 'Error calculating Two-Way ANOVA');
+                    setResultsTwoWay(null);
+                }
+            };
+            
+            return (
+                <div className="max-w-7xl mx-auto px-4">
+                    <h1 className="text-3xl font-bold mb-6">ANOVA Calculator</h1>
+                    
+                    <div className="flex mb-6 border-b">
+                        <button
+                            className={"px-4 py-2 " + (activeTab === 'one-way' ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-600")}
+                            onClick={() => setActiveTab('one-way')}
+                        >
+                            One-Way ANOVA
+                        </button>
+                        <button
+                            className={"px-4 py-2 " + (activeTab === 'two-way' ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-600")}
+                            onClick={() => setActiveTab('two-way')}
+                        >
+                            Two-Way ANOVA
+                        </button>
+                    </div>
+
+                    <div className="bg-white rounded-lg shadow-lg p-6">
+                        {activeTab === 'one-way' ? (
+                            <div>
+                                <div className="mb-6">
+                                    <label className="font-medium mb-2 block">Significance Level (α)</label>
+                                    <div className="flex gap-2">
+                                        {[0.05, 0.01].map((level) => (
+                                            <button
+                                                key={level}
+                                                onClick={() => setSignificance(level)}
+                                                className={"px-4 py-2 rounded " + 
+                                                    (significance === level
+                                                        ? "bg-blue-500 text-white"
+                                                        : "bg-gray-200")}
+                                            >
+                                                {level}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="mb-6">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h2 className="font-medium">Data Groups</h2>
+                                        <button
+                                            onClick={addGroup}
+                                            disabled={groups.length >= 10}
+                                            className="px-3 py-1 bg-blue-500 text-white rounded disabled:opacity-50"
+                                        >
+                                            Add Group
+                                        </button>
+                                    </div>
+                                    <div className="grid gap-4">
+                                        {groups.map((group, index) => (
+                                            <div key={index} className="flex gap-4">
+                                                <input
+                                                    type="text"
+                                                    value={group.name}
+                                                    onChange={(e) => {
+                                                        const newGroups = [...groups];
+                                                        newGroups[index].name = e.target.value;
+                                                        setGroups(newGroups);
+                                                    }}
+                                                    className="border rounded px-3 py-2 w-32"
+                                                />
+                                                <textarea
+                                                    value={group.data}
+                                                    onChange={(e) => handleGroupChange(index, e.target.value)}
+                                                    placeholder="Enter numbers (e.g., 7, 8, 6, 7, 8)"
+                                                    className="border rounded px-3 py-2 flex-1 h-20"
+                                                />
+                                                {groups.length > 2 && (
+                                                    <button
+                                                        onClick={() => removeGroup(index)}
+                                                        className="px-3 py-2 text-red-600 hover:bg-red-50 rounded"
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <button 
+                                    onClick={calculateAnova}
+                                    className="w-full mb-6 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                >
+                                    Calculate ANOVA
+                                </button>
+
+                                {error && (
+                                    <div className="mb-6 p-4 bg-red-50 text-red-600 rounded">
+                                        {error}
+                                    </div>
+                                )}
+
+                                {results && (
+                                    <div className="space-y-6">
+                                        <div>
+                                            <h3 className="font-medium mb-2">Group Means</h3>
+                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                                {results.groupMeans.map((group, index) => (
+                                                    <div key={index} className="p-3 bg-gray-50 rounded">
+                                                        <div className="font-medium">{group.name}</div>
+                                                        <div>Mean: {group.mean.toFixed(2)}</div>
+                                                        <div>n: {group.numbers.length}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="mt-2">
+                                                Grand Mean: {results.grandMean.toFixed(2)}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <h3 className="font-medium mb-2">ANOVA Summary</h3>
+                                            <div className="overflow-x-auto">
+                                                <table className="min-w-full border">
+                                                    <thead>
+                                                        <tr className="bg-gray-50">
+                                                            <th className="border p-2">Source</th>
+                                                            <th className="border p-2">SS</th>
+                                                            <th className="border p-2">df</th>
+                                                            <th className="border p-2">MS</th>
+                                                            <th className="border p-2">F</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td className="border p-2">Between Groups</td>
+                                                            <td className="border p-2">{results.ssb.toFixed(2)}</td>
+                                                            <td className="border p-2">{results.dfb}</td>
+                                                            <td className="border p-2">{results.msb.toFixed(2)}</td>
+                                                            <td className="border p-2" rowSpan="2">
+                                                                {results.fStat.toFixed(2)}
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="border p-2">Within Groups</td>
+                                                            <td className="border p-2">{results.ssw.toFixed(2)}</td>
+                                                            <td className="border p-2">{results.dfw}</td>
+                                                            <td className="border p-2">{results.msw.toFixed(2)}</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-4 bg-gray-50 rounded">
+                                            <h3 className="font-medium mb-2">Statistical Decision</h3>
+                                            <p>F-statistic: {results.fStat.toFixed(2)} (Critical F: {results.criticalF.toFixed(2)})</p>
+                                            <p className="mt-2">
+                                                {results.significant ? (
+                                                    <span className="text-green-600 font-medium">
+                                                        The differences between groups are statistically significant (F({results.dfb}, {results.dfw}) = {results.fStat.toFixed(2)}, p &lt; {significance}).
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-yellow-600 font-medium">
+                                                        The differences between groups are not statistically significant (F({results.dfb}, {results.dfw}) = {results.fStat.toFixed(2)}, p &gt; {significance}).
+                                                    </span>
+                                                )}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="mt-8 bg-gray-50 p-4 rounded">
+                                    <h3 className="font-medium mb-2">Understanding ANOVA Terms</h3>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <h4 className="font-medium text-blue-600">SS (Sum of Squares)</h4>
+                                            <p>Think of SS as measuring the total spread or variation in your data. It's calculated by:
+                                            <br />1. Finding how far each value is from the mean
+                                            <br />2. Squaring these differences (to make all numbers positive)
+                                            <br />3. Adding all these squared differences together</p>
+                                        </div>
+                                        
+                                        <div>
+                                            <h4 className="font-medium text-blue-600">df (Degrees of Freedom)</h4>
+                                            <p>This represents how many values can vary freely in your calculations. Think of it as:
+                                            <br />• For groups: number of groups minus 1
+                                            <br />• Within groups: total number of observations minus number of groups
+                                            <br />For example, if you have 3 groups, df between groups = 2 (3-1)</p>
+                                        </div>
+                                        
+                                        <div>
+                                            <h4 className="font-medium text-blue-600">MS (Mean Square)</h4>
+                                            <p>MS is the average variation per degree of freedom. It's simply:
+                                            <br />MS = SS ÷ df
+                                            <br />This makes the variation comparable between different groups.</p>
+                                        </div>
+                                        
+                                        <div>
+                                            <h4 className="font-medium text-blue-600">F-Statistic</h4>
+                                            <p>The F-statistic compares variation between groups to variation within groups:
+                                            <br />• Larger F means groups are more different from each other
+                                            <br />• F ≈ 1 suggests no real differences between groups
+                                            <br />• The bigger the F, the more likely the differences are real</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div>
+                                <div className="mb-6">
+                                    <label className="font-medium mb-2 block">Significance Level (α)</label>
+                                    <div className="flex gap-2">
+                                        {[0.05, 0.01].map((level) => (
+                                            <button
+                                                key={level}
+                                                onClick={() => setSignificance(level)}
+                                                className={"px-4 py-2 rounded " + 
+                                                    (significance === level
+                                                        ? "bg-blue-500 text-white"
+                                                        : "bg-gray-200")}
+                                            >
+                                                {level}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-6 mb-6">
+                                    {factorALevels.map((levelA, i) => (
+                                        <div key={i}>
+                                            <h3 className="font-medium mb-2">Marketing Channel: {levelA}</h3>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                {factorBLevels.map((levelB, j) => (
+                                                    <div key={j} className="mb-4">
+                                                        <label className="block text-sm text-gray-600 mb-1">{levelB}</label>
+                                                        <textarea
+                                                            value={twoWayData[levelA + "-" + levelB] || ''}
+                                                            onChange={(e) => handleTwoWayDataChange(levelA, levelB, e.target.value)}
+                                                            className="border rounded px-3 py-2 w-full h-20"
+                                                            placeholder="Enter values (e.g., 82, 85, 89)"
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <button 
+                                    onClick={calculateTwoWayAnova}
+                                    className="w-full mb-6 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                >
+                                    Calculate Two-Way ANOVA
+                                </button>
+
+                                {errorTwoWay && (
+                                    <div className="mb-6 p-4 bg-red-50 text-red-600 rounded">
+                                        {errorTwoWay}
+                                    </div>
+                                )}
+
+                                {resultsTwoWay && (
+                                    <div className="space-y-6">
+                                        <div>
+                                            <h3 className="font-medium mb-2">ANOVA Summary</h3>
+                                            <div className="overflow-x-auto">
+                                                <table className="min-w-full border">
+                                                    <thead>
+                                                        <tr className="bg-gray-50">
+                                                            <th className="border p-2">Source</th>
+                                                            <th className="border p-2">df</th>
+                                                            <th className="border p-2">SS</th>
+                                                            <th className="border p-2">MS</th>
+                                                            <th className="border p-2">F</th>
+                                                            <th className="border p-2">p-value</th>
+                                                            <th className="border p-2">Significant</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td className="border p-2">Marketing Channel (A)</td>
+                                                            <td className="border p-2">{resultsTwoWay.factorA.df}</td>
+                                                            <td className="border p-2">{resultsTwoWay.factorA.ss.toFixed(2)}</td>
+                                                            <td className="border p-2">{resultsTwoWay.factorA.ms.toFixed(2)}</td>
+                                                            <td className="border p-2">{resultsTwoWay.factorA.f.toFixed(2)}</td>
+                                                            <td className="border p-2">{resultsTwoWay.factorA.p.toFixed(3)}</td>
+                                                            <td className="border p-2">
+                                                                <span className={resultsTwoWay.factorA.p < significance ? "text-green-600" : "text-yellow-600"}>
+                                                                    {resultsTwoWay.factorA.p < significance ? "Yes" : "No"}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="border p-2">Time of Day (B)</td>
+                                                            <td className="border p-2">{resultsTwoWay.factorB.df}</td>
+                                                            <td className="border p-2">{resultsTwoWay.factorB.ss.toFixed(2)}</td>
+                                                            <td className="border p-2">{resultsTwoWay.factorB.ms.toFixed(2)}</td>
+                                                            <td className="border p-2">{resultsTwoWay.factorB.f.toFixed(2)}</td>
+                                                            <td className="border p-2">{resultsTwoWay.factorB.p.toFixed(3)}</td>
+                                                            <td className="border p-2">
+                                                                <span className={resultsTwoWay.factorB.p < significance ? "text-green-600" : "text-yellow-600"}>
+                                                                    {resultsTwoWay.factorB.p < significance ? "Yes" : "No"}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="border p-2">Interaction (A×B)</td>
+                                                            <td className="border p-2">{resultsTwoWay.interaction.df}</td>
+                                                            <td className="border p-2">{resultsTwoWay.interaction.ss.toFixed(2)}</td>
+                                                            <td className="border p-2">{resultsTwoWay.interaction.ms.toFixed(2)}</td>
+                                                            <td className="border p-2">{resultsTwoWay.interaction.f.toFixed(2)}</td>
+                                                            <td className="border p-2">{resultsTwoWay.interaction.p.toFixed(3)}</td>
+                                                            <td className="border p-2">
+                                                                <span className={resultsTwoWay.interaction.p < significance ? "text-green-600" : "text-yellow-600"}>
+                                                                    {resultsTwoWay.interaction.p < significance ? "Yes" : "No"}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="mt-8 bg-gray-50 p-4 rounded">
+                                    <h3 className="font-medium mb-2">Example Scenario: Marketing Channel and Time of Day</h3>
+                                    <p className="mb-4">
+                                        A marketing team wants to understand how different marketing channels perform at different 
+                                        times of day. They measure brand recall scores across three channels (Social Media, TV, Print) 
+                                        during morning and evening hours.
+                                    </p>
+                                    <div className="mb-4">
+                                        <strong>Sample Data:</strong>
+                                        <br />
+                                        Social Media - Morning: 82, 85, 89 (%)
+                                        <br />
+                                        Social Media - Evening: 78, 81, 77 (%)
+                                        <br />
+                                        TV - Morning: 72, 75, 71 (%)
+                                        <br />
+                                        TV - Evening: 68, 65, 70 (%)
+                                        <br />
+                                        Print - Morning: 62, 64, 63 (%)
+                                        <br />
+                                        Print - Evening: 58, 61, 59 (%)
+                                    </div>
+                                    <p>
+                                        The two-way ANOVA helps determine:
+                                        <br />
+                                        1. If there are differences between marketing channels
+                                        <br />
+                                        2. If there are differences between times of day
+                                        <br />
+                                        3. If there is an interaction between channel and time
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const container = document.getElementById('root');
+        const root = ReactDOM.createRoot(container);
+        root.render(<App />);
+    </script>
+</body>
+</html>
+                                

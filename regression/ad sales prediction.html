@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketing Campaign ROI Prediction</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .chart-container {
+            width: 800px;
+            height: 500px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            position: relative;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .title, .subtitle {
+            text-align: center;
+            width: 100%;
+            position: absolute;
+        }
+        
+        .title {
+            top: 40px;
+            font-size: 22px;
+            font-weight: bold;
+        }
+        
+        .subtitle {
+            top: 70px;
+            font-size: 18px;
+            font-style: italic;
+        }
+        
+        .x-axis, .y-axis {
+            position: absolute;
+            background-color: #333;
+        }
+        
+        .x-axis {
+            width: 600px;
+            height: 2px;
+            left: 100px;
+            top: 400px;
+        }
+        
+        .y-axis {
+            width: 2px;
+            height: 300px;
+            left: 100px;
+            top: 100px;
+        }
+        
+        .x-label, .y-label {
+            position: absolute;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .x-label {
+            width: 200px;
+            text-align: center;
+            left: 300px;
+            top: 455px;
+        }
+        
+        .y-label {
+            width: 200px;
+            text-align: center;
+            transform: rotate(-90deg);
+            transform-origin: left top;
+            left: 40px;
+            top: 250px;
+        }
+        
+        .tick {
+            position: absolute;
+            background-color: #333;
+        }
+        
+        .tick-label {
+            position: absolute;
+            font-size: 12px;
+            text-align: center;
+        }
+        
+        .regression-line {
+            position: absolute;
+            width: 600px;
+            height: 0;
+            background-color: transparent;
+            top: 385px;
+            left: 100px;
+            border-top: 3px solid #EA4335;
+            transform-origin: left center;
+            transform: rotate(-18.6deg);
+        }
+        
+        .data-point {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #4285F4;
+            transform: translate(-6px, -6px);
+        }
+        
+        .target-point {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background-color: #FBBC05;
+            border: 1.5px solid #000;
+            transform: translate(-8px, -8px);
+            left: 550px;
+            top: 232px;
+        }
+        
+        .projection-line {
+            position: absolute;
+            background-color: transparent;
+            border-top: 2px dashed #34A853;
+        }
+        
+        .projection-vertical {
+            width: 2px;
+            height: 168px;
+            border-top: none;
+            border-left: 2px dashed #34A853;
+            left: 550px;
+            top: 232px;
+        }
+        
+        .projection-horizontal {
+            width: 450px;
+            left: 100px;
+            top: 232px;
+        }
+        
+        .intercept-point {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #EA4335;
+            border: 1.5px solid #000;
+            transform: translate(-6px, -6px);
+            left: 100px;
+            top: 385px;
+        }
+        
+        .error-point {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: transparent;
+            border: 2px dashed #9C27B0;
+            transform: translate(-6px, -6px);
+            left: 400px;
+            top: 270px;
+        }
+        
+        .error-line {
+            position: absolute;
+            width: 2px;
+            height: 10px;
+            background-color: #9C27B0;
+            left: 400px;
+            top: 270px;
+        }
+        
+        .label-text {
+            position: absolute;
+            font-size: 14px;
+        }
+        
+        .slope-viz {
+            position: absolute;
+            left: 220px;
+            top: 324px;
+        }
+        
+        .legend {
+            position: absolute;
+            width: 170px;
+            height: 110px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            left: 600px;
+            top: 430px;
+            padding: 5px;
+        }
+        
+        .legend-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-top: 5px;
+        }
+        
+        .legend-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        
+        .legend-line {
+            width: 20px;
+            height: 3px;
+        }
+        
+        .legend-dash {
+            width: 20px;
+            height: 2px;
+            border-top: 2px dashed #34A853;
+        }
+        
+        .legend-text {
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chart-container">
+        <!-- Title and Subtitle -->
+        <div class="title">Marketing Campaign ROI Prediction</div>
+        <div class="subtitle">y' = 3.2x + 10 + e</div>
+        
+        <!-- Axes -->
+        <div class="x-axis"></div>
+        <div class="y-axis"></div>
+        
+        <!-- Axis Labels -->
+        <div class="x-label">Ad Spend (x) in $1,000s</div>
+        <div class="y-label">Sales Revenue (y) in $1,000s</div>
+        
+        <!-- X-axis Ticks and Labels -->
+        <div class="tick" style="width: 2px; height: 5px; left: 100px; top: 400px;"></div>
+        <div class="tick-label" style="width: 20px; left: 90px; top: 425px;">0</div>
+        
+        <div class="tick" style="width: 2px; height: 5px; left: 220px; top: 400px;"></div>
+        <div class="tick-label" style="width: 20px; left: 210px; top: 425px;">10</div>
+        
+        <div class="tick" style="width: 2px; height: 5px; left: 340px; top: 400px;"></div>
+        <div class="tick-label" style="width: 20px; left: 330px; top: 425px;">20</div>
+        
+        <div class="tick" style="width: 2px; height: 5px; left: 460px; top: 400px;"></div>
+        <div class="tick-label" style="width: 20px; left: 450px; top: 425px;">30</div>
+        
+        <div class="tick" style="width: 2px; height: 5px; left: 580px; top: 400px;"></div>
+        <div class="tick-label" style="width: 20px; left: 570px; top: 425px;">40</div>
+        
+        <div class="tick" style="width: 2px; height: 5px; left: 700px; top: 400px;"></div>
+        <div class="tick-label" style="width: 20px; left: 690px; top: 425px;">50</div>
+        
+        <!-- Y-axis Ticks and Labels -->
+        <div class="tick" style="width: 5px; height: 2px; left: 95px; top: 400px;"></div>
+        <div class="tick-label" style="width: 20px; text-align: right; left: 65px; top: 395px;">0</div>
+        
+        <div class="tick" style="width: 5px; height: 2px; left: 95px; top: 340px;"></div>
+        <div class="tick-label" style="width: 20px; text-align: right; left: 65px; top: 335px;">60</div>
+        
+        <div class="tick" style="width: 5px; height: 2px; left: 95px; top: 280px;"></div>
+        <div class="tick-label" style="width: 20px; text-align: right; left: 65px; top: 275px;">100</div>
+        
+        <div class="tick" style="width: 5px; height: 2px; left: 95px; top: 220px;"></div>
+        <div class="tick-label" style="width: 20px; text-align: right; left: 65px; top: 215px;">140</div>
+        
+        <div class="tick" style="width: 5px; height: 2px; left: 95px; top: 160px;"></div>
+        <div class="tick-label" style="width: 20px; text-align: right; left: 65px; top: 155px;">180</div>
+        
+        <div class="tick" style="width: 5px; height: 2px; left: 95px; top: 100px;"></div>
+        <div class="tick-label" style="width: 20px; text-align: right; left: 65px; top: 95px;">220</div>
+        
+        <!-- Data Points -->
+        <div class="data-point" style="left: 160px; top: 368px;"></div>
+        <div class="data-point" style="left: 220px; top: 346px;"></div>
+        <div class="data-point" style="left: 280px; top: 324px;"></div>
+        <div class="data-point" style="left: 340px; top: 302px;"></div>
+        <div class="data-point" style="left: 400px; top: 280px;"></div>
+        <div class="data-point" style="left: 460px; top: 258px;"></div>
+        <div class="data-point" style="left: 520px; top: 236px;"></div>
+        <div class="data-point" style="left: 580px; top: 214px;"></div>
+        <div class="data-point" style="left: 640px; top: 192px;"></div>
+        
+        <!-- Updated dot for precise target line intersection -->
+        <div class="data-point" style="left: 550px; top: 232px; opacity: 0;"></div>
+        
+        <!-- Regression Line -->
+        <div class="regression-line"></div>
+        
+        <!-- Target Point and Projection Lines -->
+        <div class="target-point"></div>
+        <div class="projection-line projection-vertical"></div>
+        <div class="projection-line projection-horizontal"></div>
+        
+        <!-- Target Labels -->
+        <div class="label-text" style="left: 560px; top: 222px; font-weight: bold;">Target: $130K</div>
+        <div class="label-text" style="left: 560px; top: 380px; font-weight: bold;">Budget: $37.5K</div>
+        
+        <!-- Y-intercept Point -->
+        <div class="intercept-point"></div>
+        <div class="label-text" style="left: 120px; top: 375px;">c = $10K (Baseline sales)</div>
+        
+        <!-- Error Visualization -->
+        <div class="error-point"></div>
+        <div class="error-line"></div>
+        <div class="label-text" style="left: 410px; top: 265px; color: #9C27B0;">e (Error)</div>
+        
+        <!-- Slope Visualization -->
+        <svg class="slope-viz" width="120" height="30">
+            <path d="M 0,22 L 60,22 L 60,0" fill="none" stroke="#FF6D01" stroke-width="2" />
+        </svg>
+        <div class="label-text" style="left: 290px; top: 325px; color: #FF6D01;">b = 3.2 (Each $1K → $3.2K sales)</div>
+        
+        <!-- Legend -->
+        <div class="legend">
+            <div class="legend-title">Legend</div>
+            
+            <div class="legend-item">
+                <div class="legend-icon">
+                    <div class="legend-dot" style="background-color: #4285F4;"></div>
+                </div>
+                <div class="legend-text">Historical campaigns</div>
+            </div>
+            
+            <div class="legend-item">
+                <div class="legend-icon">
+                    <div class="legend-line" style="background-color: #EA4335;"></div>
+                </div>
+                <div class="legend-text">Regression line (3.2x+10)</div>
+            </div>
+            
+            <div class="legend-item">
+                <div class="legend-icon">
+                    <div class="legend-dot" style="background-color: #FBBC05;"></div>
+                </div>
+                <div class="legend-text">Target sales ($130K)</div>
+            </div>
+            
+            <div class="legend-item">
+                <div class="legend-icon">
+                    <div class="legend-dash"></div>
+                </div>
+                <div class="legend-text">Prediction projection</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

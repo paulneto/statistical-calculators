@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Correlation Calculator</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    
+    <style>
+        body { 
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen py-12">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const ScatterPlot = ({ data, width = 400, height = 300, margin = 40 }) => {
+            if (!data || data.length === 0) return null;
+            
+            // Calculate min/max values
+            const xValues = data.map(d => d.x);
+            const yValues = data.map(d => d.y);
+            const xMin = Math.min(...xValues);
+            const xMax = Math.max(...xValues);
+            const yMin = Math.min(...yValues);
+            const yMax = Math.max(...yValues);
+            
+            // Add padding to ranges
+            const xRange = xMax - xMin;
+            const yRange = yMax - yMin;
+            const xPadding = xRange * 0.1;
+            const yPadding = yRange * 0.1;
+            
+            // Scale functions
+            const xScale = (x) => (
+                (x - xMin) / (xMax - xMin) * (width - 2 * margin) + margin
+            );
+            
+            const yScale = (y) => (
+                height - ((y - yMin) / (yMax - yMin) * (height - 2 * margin) + margin)
+            );
+            
+            return (
+                <svg width={width} height={height}>
+                    {/* X-axis */}
+                    <line
+                        x1={margin}
+                        y1={height - margin}
+                        x2={width - margin}
+                        y2={height - margin}
+                        stroke="black"
+                    />
+                    {/* Y-axis */}
+                    <line
+                        x1={margin}
+                        y1={margin}
+                        x2={margin}
+                        y2={height - margin}
+                        stroke="black"
+                    />
+                    
+                    {/* Points */}
+                    {data.map((point, i) => (
+                        <circle
+                            key={i}
+                            cx={xScale(point.x)}
+                            cy={yScale(point.y)}
+                            r={4}
+                            fill="#4F46E5"
+                        />
+                    ))}
+                    
+                    {/* Axis labels */}
+                    <text x={width/2} y={height-5} textAnchor="middle">X Values</text>
+                    <text x={15} y={height/2} textAnchor="middle" transform={`rotate(-90, 15, ${height/2})`}>Y Values</text>
+                </svg>
+            );
+        };
+
+        const CorrelationCalculator = () => {
+            // Example data: Video Length (minutes) and Engagement Rate (%)
+            const exampleX = "2.5, 1.8, 4.2, 3.1, 5.5, 2.2, 3.8, 1.5, 4.5, 2.8";
+            const exampleY = "8.2, 7.5, 4.1, 6.3, 3.8, 7.8, 5.2, 8.5, 4.0, 6.9";
+
+            const [xValues, setXValues] = React.useState(exampleX);
+            const [yValues, setYValues] = React.useState(exampleY);
+            const [result, setResult] = React.useState(null);
+            const [error, setError] = React.useState('');
+            const [scatterData, setScatterData] = React.useState([]);
+
+            const processTextInput = (text) => {
+                return text
+                    .split(/[\n,\s]+/)
+                    .map(num => num.trim())
+                    .filter(num => num !== '' && !isNaN(num))
+                    .map(num => parseFloat(num));
+            };
+
+            const calculateCorrelation = (x, y) => {
+                if (x.length !== y.length || x.length < 2) {
+                    setError('Both variables must have the same number of values (minimum 2)');
+                    return null;
+                }
+
+                const n = x.length;
+                const sumX = x.reduce((a, b) => a + b, 0);
+                const sumY = y.reduce((a, b) => a + b, 0);
+                const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
+                const sumXSquare = x.reduce((sum, xi) => sum + xi * xi, 0);
+                const sumYSquare = y.reduce((sum, yi) => sum + yi * yi, 0);
+
+                const numerator = n * sumXY - sumX * sumY;
+                const denominator = Math.sqrt((n * sumXSquare - sumX * sumX) * (n * sumYSquare - sumY * sumY));
+
+                if (denominator === 0) {
+                    setError('Cannot calculate correlation coefficient (division by zero)');
+                    return null;
+                }
+
+                const r = numerator / denominator;
+                const rSquared = r * r;
+
+                return {
+                    r: r.toFixed(4),
+                    rSquared: rSquared.toFixed(4),
+                    strength: interpretCorrelation(r),
+                    direction: r > 0 ? 'positive' : r < 0 ? 'negative' : 'no'
+                };
+            };
+
+            const interpretCorrelation = (r) => {
+                const abs = Math.abs(r);
+                if (abs >= 0.9) return 'Very strong';
+                if (abs >= 0.7) return 'Strong';
+                if (abs >= 0.5) return 'Moderate';
+                if (abs >= 0.3) return 'Weak';
+                return 'Very weak';
+            };
+
+            React.useEffect(() => {
+                handleCalculate();
+            }, []);
+
+            const handleCalculate = () => {
+                setError('');
+                const x = processTextInput(xValues);
+                const y = processTextInput(yValues);
+                
+                if (x.length === y.length) {
+                    setScatterData(x.map((xVal, i) => ({ x: xVal, y: y[i] })));
+                }
+                
+                const correlationResult = calculateCorrelation(x, y);
+                setResult(correlationResult);
+            };
+
+            return (
+                <div className="max-w-4xl mx-auto px-4">
+                    <div className="bg-white rounded-lg shadow-lg p-6">
+                        <h1 className="text-2xl font-bold mb-4">Pearson Correlation Calculator</h1>
+                        
+                        <div className="bg-blue-50 p-4 rounded mb-6">
+                            <h3 className="font-medium mb-2">Example Data: Social Media Video Performance</h3>
+                            <p>The calculator is pre-populated with sample data showing the relationship between video length (minutes) and engagement rate (%) for 10 social media posts.</p>
+                            <p className="mt-2 text-sm text-blue-600">Try calculating with this data, then replace it with your own values!</p>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label className="block font-medium mb-2">X Values (e.g., Video Length in minutes)</label>
+                                <textarea
+                                    value={xValues}
+                                    onChange={(e) => setXValues(e.target.value)}
+                                    className="w-full h-32 border rounded p-2 font-mono"
+                                    placeholder="Enter values either as:
+
+2.5, 1.8, 4.2, 3.1
+
+or
+
+2.5
+1.8
+4.2
+3.1"
+                                />
+                            </div>
+                            <div>
+                                <label className="block font-medium mb-2">Y Values (e.g., Engagement Rate %)</label>
+                                <textarea
+                                    value={yValues}
+                                    onChange={(e) => setYValues(e.target.value)}
+                                    className="w-full h-32 border rounded p-2 font-mono"
+                                    placeholder="Enter values either as:
+
+8.2, 7.5, 4.1, 6.3
+
+or
+
+8.2
+7.5
+4.1
+6.3"
+                                />
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={handleCalculate}
+                            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mb-6"
+                        >
+                            Calculate Correlation
+                        </button>
+
+                        {error && (
+                            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                                {error}
+                            </div>
+                        )}
+
+                        {result && (
+                            <div className="bg-gray-50 p-4 rounded">
+                                <h3 className="font-medium mb-4">Results</h3>
+                                <div className="grid md:grid-cols-2 gap-4 mb-6">
+                                    <div>
+                                        <p><strong>Correlation coefficient (r):</strong> {result.r}</p>
+                                        <p><strong>Coefficient of determination (r²):</strong> {result.rSquared}</p>
+                                    </div>
+                                    <div>
+                                        <p><strong>Strength:</strong> {result.strength}</p>
+                                        <p><strong>Direction:</strong> {result.direction} correlation</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="mt-4">
+                                    <h4 className="font-medium mb-2">Scatter Plot</h4>
+                                    <div className="bg-white p-4 rounded border flex justify-center">
+                                        <ScatterPlot data={scatterData} />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="mt-8 bg-gray-50 p-4 rounded">
+                            <h3 className="font-medium mb-4">Interpreting Your Results</h3>
+                            
+                            <div className="mb-4">
+                                <h4 className="font-medium text-blue-600">Correlation Coefficient (r)</h4>
+                                <ul className="list-disc ml-6 mt-1">
+                                    <li><strong>Range:</strong> -1 to +1</li>
+                                    <li><strong>Negative values:</strong> As one variable increases, the other tends to decrease</li>
+                                    <li><strong>Positive values:</strong> As one variable increases, the other tends to increase</li>
+                                    <li><strong>Zero:</strong> No linear relationship between variables</li>
+                                </ul>
+                            </div>
+
+                            <div className="mb-4">
+                                <h4 className="font-medium text-blue-600">Strength Guide</h4>
+                                <ul className="list-disc ml-6 mt-1">
+                                    <li><strong>0.9 to 1.0:</strong> Very strong relationship</li>
+                                    <li><strong>0.7 to 0.9:</strong> Strong relationship</li>
+                                    <li><strong>0.5 to 0.7:</strong> Moderate relationship</li>
+                                    <li><strong>0.3 to 0.5:</strong> Weak relationship</li>
+                                    <li><strong>0.0 to 0.3:</strong> Very weak to no relationship</li>
+                                </ul>
+                            </div>
+
+                            <div className="mb-4">
+                                <h4 className="font-medium text-blue-600">Coefficient of Determination (r²)</h4>
+                                <ul className="list-disc ml-6 mt-1">
+                                    <li>Shows the proportion of variance in one variable that's predictable from the other</li>
+                                    <li>Multiply by 100 to get the percentage of variation explained</li>
+                                    <li>Example: r² = 0.81 means 81% of the variation can be explained by the relationship</li>
+                                </ul>
+                            </div>
+
+                            <div className="bg-yellow-50 p-4 rounded mt-4">
+                                <h4 className="font-medium text-yellow-800">Important Considerations</h4>
+                                <ul className="list-disc ml-6 mt-1 text-yellow-800">
+                                    <li>Correlation does not imply causation</li>
+                                    <li>The relationship must be linear for Pearson's correlation to be meaningful</li>
+                                    <li>Outliers can significantly affect the correlation coefficient</li>
+                                    <li>Sample size affects the reliability of the correlation</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<CorrelationCalculator />, document.getElementById('root'));
+    </script>
+</body>
+</html>

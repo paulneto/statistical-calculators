@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Significance Difference Calculator</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    
+    <style>
+        body { 
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen py-12">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const SignificanceCalculator = () => {
+            const [groupA, setGroupA] = React.useState({
+                respondents: 500,
+                percentages: []
+            });
+            const [groupB, setGroupB] = React.useState({
+                respondents: 350,
+                percentages: []
+            });
+            const [confidenceLevel, setConfidenceLevel] = React.useState(95);
+            const [groupAText, setGroupAText] = React.useState('');
+            const [groupBText, setGroupBText] = React.useState('');
+
+            const processTextInput = (text) => {
+                return text
+                    .split(/[\n,\s]+/)
+                    .map(num => num.trim())
+                    .filter(num => num !== '' && !isNaN(num))
+                    .map(num => parseFloat(num));
+            };
+
+            const handleGroupATextChange = (e) => {
+                setGroupAText(e.target.value);
+                const numbers = processTextInput(e.target.value);
+                setGroupA(prev => ({ ...prev, percentages: numbers }));
+            };
+
+            const handleGroupBTextChange = (e) => {
+                setGroupBText(e.target.value);
+                const numbers = processTextInput(e.target.value);
+                setGroupB(prev => ({ ...prev, percentages: numbers }));
+            };
+
+            const calculateZScore = (confidence) => {
+                const zScores = {
+                    99: 2.576,
+                    95: 1.96,
+                    90: 1.645,
+                    80: 1.28
+                };
+                return zScores[confidence];
+            };
+
+            const calculateSignificance = (percentA, percentB, nA, nB, confidence) => {
+                if (!percentA || !percentB || !nA || !nB) return null;
+                
+                const pA = parseFloat(percentA) / 100;
+                const pB = parseFloat(percentB) / 100;
+                
+                const seA = Math.sqrt((pA * (1 - pA)) / nA);
+                const seB = Math.sqrt((pB * (1 - pB)) / nB);
+                const seDiff = Math.sqrt(seA * seA + seB * seB);
+                
+                const zScore = Math.abs(pA - pB) / seDiff;
+                const criticalZ = calculateZScore(confidence);
+                
+                return {
+                    significant: zScore > criticalZ,
+                    difference: Math.abs(parseFloat(percentA) - parseFloat(percentB)).toFixed(1),
+                    zScore: zScore.toFixed(2)
+                };
+            };
+
+            return (
+                <div className="max-w-7xl mx-auto px-4">
+                    <div className="bg-white rounded-lg shadow-lg p-6">
+                        <h1 className="text-2xl font-bold mb-4">Significance Difference Calculator</h1>
+                        
+                        {/* Confidence Level Selection */}
+                        <div className="mb-6">
+                            <h3 className="font-medium mb-2">Confidence Level</h3>
+                            <div className="flex gap-2">
+                                {[99, 95, 90, 80].map((level) => (
+                                    <button
+                                        key={level}
+                                        onClick={() => setConfidenceLevel(level)}
+                                        className={`px-4 py-2 rounded ${
+                                            confidenceLevel === level
+                                                ? 'bg-blue-500 text-white'
+                                                : 'bg-gray-200'
+                                        }`}
+                                    >
+                                        {level}%
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Group Inputs */}
+                        <div className="grid md:grid-cols-2 gap-6">
+                            {/* Group A */}
+                            <div>
+                                <h3 className="font-medium mb-2">Group A</h3>
+                                <div className="mb-2">
+                                    <input
+                                        type="number"
+                                        value={groupA.respondents}
+                                        onChange={(e) => setGroupA(prev => ({ ...prev, respondents: e.target.value }))}
+                                        className="border rounded px-2 py-1"
+                                        placeholder="Respondents"
+                                    />
+                                    <span className="ml-2">respondents</span>
+                                </div>
+                                <textarea
+                                    value={groupAText}
+                                    onChange={handleGroupATextChange}
+                                    className="w-full h-32 border rounded p-2"
+                                    placeholder="Enter percentages (one per line or comma-separated)"
+                                />
+                            </div>
+
+                            {/* Group B */}
+                            <div>
+                                <h3 className="font-medium mb-2">Group B</h3>
+                                <div className="mb-2">
+                                    <input
+                                        type="number"
+                                        value={groupB.respondents}
+                                        onChange={(e) => setGroupB(prev => ({ ...prev, respondents: e.target.value }))}
+                                        className="border rounded px-2 py-1"
+                                        placeholder="Respondents"
+                                    />
+                                    <span className="ml-2">respondents</span>
+                                </div>
+                                <textarea
+                                    value={groupBText}
+                                    onChange={handleGroupBTextChange}
+                                    className="w-full h-32 border rounded p-2"
+                                    placeholder="Enter percentages (one per line or comma-separated)"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Results */}
+                        <div className="mt-6">
+                            <h3 className="font-medium mb-2">Results</h3>
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full border">
+                                    <thead>
+                                        <tr className="bg-gray-100">
+                                            <th className="border p-2">Item</th>
+                                            <th className="border p-2">Group A %</th>
+                                            <th className="border p-2">Group B %</th>
+                                            <th className="border p-2">Difference</th>
+                                            <th className="border p-2">Z-Score</th>
+                                            <th className="border p-2">Significant</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {groupA.percentages.map((percentA, index) => {
+                                            const percentB = groupB.percentages[index];
+                                            const result = calculateSignificance(
+                                                percentA,
+                                                percentB,
+                                                groupA.respondents,
+                                                groupB.respondents,
+                                                confidenceLevel
+                                            );
+
+                                            if (!result) return null;
+
+                                            return (
+                                                <tr key={index}>
+                                                    <td className="border p-2">{index + 1}</td>
+                                                    <td className="border p-2">{percentA}%</td>
+                                                    <td className="border p-2">{percentB}%</td>
+                                                    <td className="border p-2">{result.difference}%</td>
+                                                    <td className="border p-2">{result.zScore}</td>
+                                                    <td className="border p-2">
+                                                        <span className={`px-2 py-1 rounded ${
+                                                            result.significant 
+                                                                ? 'bg-green-100 text-green-800' 
+                                                                : 'bg-yellow-100 text-yellow-800'
+                                                        }`}>
+                                                            {result.significant ? 'Yes' : 'No'}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Interpretation Guide */}
+                        <div className="mt-8 bg-gray-50 p-4 rounded">
+                            <h3 className="font-medium mb-4">How to Interpret Your Results</h3>
+                            <p className="mb-2">
+                                <strong>The Basics:</strong> This calculator helps you determine if the differences between your two groups are "real" or just due to chance.
+                            </p>
+                            <p className="mb-2">
+                                <strong>Significance:</strong> When a result is marked as "Significant", it means we're confident the difference isn't random chance. The confidence level ({confidenceLevel}%) tells you how sure we are.
+                            </p>
+                            <p className="mb-2">
+                                <strong>Z-Score:</strong> This measures how strong the difference is. At {confidenceLevel}% confidence, a Z-score needs to be bigger than {calculateZScore(confidenceLevel)} to be significant.
+                            </p>
+                            <p>
+                                <strong>Quick Tip:</strong> A statistically significant difference isn't always practically important. Consider both the significance and the actual size of the difference.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<SignificanceCalculator />, document.getElementById('root'));
+    </script>
+</body>
+</html>

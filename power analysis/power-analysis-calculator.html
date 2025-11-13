@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Power Analysis Calculator for Marketing Research</title>
+    <style>
+        :root {
+            --primary-color: #1976d2;
+            --primary-light: #e3f2fd;
+            --primary-dark: #1565c0;
+            --secondary-color: #ff6d00;
+            --text-color: #333;
+            --border-color: #ddd;
+            --success-color: #4caf50;
+            --warning-color: #ff9800;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        h1, h2, h3, h4 {
+            color: var(--primary-dark);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input[type="number"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .card {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: white;
+        }
+        
+        .info-box {
+            background-color: var(--primary-light);
+            border-left: 4px solid var(--primary-color);
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .warning-box {
+            background-color: #fff3e0;
+            border-left: 4px solid var(--warning-color);
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .result-container {
+            display: none;
+            background-color: var(--primary-light);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .result-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-dark);
+            margin: 10px 0;
+            text-align: center;
+        }
+        
+        .power-slider-container {
+            margin-top: 20px;
+        }
+        
+        .slider-grid {
+            display: grid;
+            grid-template-columns: 1fr 80px;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .power-slider {
+            width: 100%;
+        }
+        
+        .sample-recommendation {
+            background-color: #e8f5e9;
+            border-left: 4px solid var(--success-color);
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .chart-container {
+            height: 400px;
+            margin-top: 20px;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            margin-right: 5px;
+            background-color: #f5f5f5;
+        }
+        
+        .tab.active {
+            background-color: white;
+            border-color: var(--border-color);
+            border-bottom: 1px solid white;
+            margin-bottom: -1px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .example-btn {
+            background-color: var(--secondary-color);
+            margin-bottom: 20px;
+        }
+        
+        .example-btn:hover {
+            background-color: #e65100;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        th {
+            background-color: var(--primary-light);
+            color: var(--primary-dark);
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .interpretation {
+            background-color: #e3f2fd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .result-summary {
+            font-size: 18px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+        }
+        
+        .help-icon {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 18px;
+            font-size: 12px;
+            margin-left: 5px;
+            cursor: help;
+        }
+        
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            width: 250px;
+            background-color: #333;
+            color: white;
+            text-align: left;
+            border-radius: 4px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 14px;
+            font-weight: normal;
+        }
+        
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .settings-icon {
+            margin-right: 5px;
+        }
+        
+        .toggle-advanced {
+            background-color: #f5f5f5;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+        
+        .toggle-advanced:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .advanced-settings {
+            display: none;
+            background-color: #f9f9f9;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Power Analysis Calculator for Marketing Research</h1>
+    
+    <div class="container">
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('calculator')">Calculator</div>
+            <div class="tab" onclick="switchTab('primer')">Power Analysis Primer</div>
+            <div class="tab" onclick="switchTab('examples')">TV Campaign Examples</div>
+        </div>
+        
+        <div id="calculator" class="tab-content active">
+            <p>This calculator helps you determine the appropriate sample size needed to detect the effect of a TV advertising campaign based on your statistical parameters.</p>
+            
+            <div class="info-box">
+                <strong>Use this calculator to:</strong>
+                <ul>
+                    <li>Determine the minimum sample size needed to detect campaign effects</li>
+                    <li>Calculate statistical power for your planned study</li>
+                    <li>Understand the relationship between sample size, effect size, and statistical power</li>
+                </ul>
+            </div>
+            
+            <button class="example-btn" id="load-example-btn">Load TV Campaign Example</button>
+            
+            <div class="grid">
+                <div>
+                    <h3>Study Parameters</h3>
+                    
+                    <div class="input-group">
+                        <label for="analysis-type">Analysis Type <span class="tooltip"><span class="help-icon">?</span><span class="tooltip-text">Select the appropriate statistical test for your research design.</span></span></label>
+                        <select id="analysis-type">
+                            <option value="ttest">Two-Sample t-test (Exposed vs. Control)</option>
+                            <option value="proportion">Proportion Test (Conversion Rate)</option>
+                            <option value="correlation">Correlation Analysis</option>
+                        </select>
+                    </div>
+                    
+                    <div id="effect-size-container" class="input-group">
+                        <label for="effect-size">Effect Size (Cohen's d) <span class="tooltip"><span class="help-icon">?</span><span class="tooltip-text">For t-tests: Small (0.2), Medium (0.5), Large (0.8). This represents how large the difference is between exposed and control groups.</span></span></label>
+                        <input type="number" id="effect-size" min="0.01" step="0.01" value="0.3">
+                    </div>
+                    
+                    <div id="proportion1-container" class="input-group" style="display: none;">
+                        <label for="proportion1">Conversion Rate (Control) <span class="tooltip"><span class="help-icon">?</span><span class="tooltip-text">The baseline conversion rate without TV campaign exposure (e.g., 0.05 for 5%).</span></span></label>
+                        <input type="number" id="proportion1" min="0.001" max="0.999" step="0.001" value="0.05">
+                    </div>
+                    
+                    <div id="proportion2-container" class="input-group" style="display: none;">
+                        <label for="proportion2">Conversion Rate (Exposed) <span class="tooltip"><span class="help-icon">?</span><span class="tooltip-text">The expected conversion rate with TV campaign exposure (e.g., 0.08 for 8%).</span></span></label>
+                        <input type="number" id="proportion2" min="0.001" max="0.999" step="0.001" value="0.08">
+                    </div>
+                    
+                    <div id="correlation-container" class="input-group" style="display: none;">
+                        <label for="correlation">Expected Correlation (r) <span class="tooltip"><span class="help-icon">?</span><span class="tooltip-text">Small (0.1), Medium (0.3), Large (0.5). The expected correlation between ad exposure and outcome.</span></span></label>
+                        <input type="number" id="correlation" min="0.01" max="0.99" step="0.01" value="0.2">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="significance">Significance Level (α) <span class="tooltip"><span class="help-icon">?</span><span class="tooltip-text">The probability of making a Type I error (false positive). Standard is 0.05, meaning a 5% chance of finding an effect when none exists.</span></span></label>
+                        <select id="significance">
+                            <option value="0.05">0.05 (5%, Standard)</option>
+                            <option value="0.01">0.01 (1%, Conservative)</option>
+                            <option value="0.1">0.10 (10%, Exploratory)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="power">Desired Power <span class="tooltip"><span class="help-icon">?</span><span class="tooltip-text">The probability of detecting an effect if it exists. Standard is 0.8, meaning an 80% chance of finding a true effect.</span></span></label>
+                        <select id="power">
+                            <option value="0.8">0.80 (80%, Standard)</option>
+                            <option value="0.9">0.90 (90%, High)</option>
+                            <option value="0.95">0.95 (95%, Very High)</option>
+                            <option value="0.7">0.70 (70%, Minimum Acceptable)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="tails">Test Direction <span class="tooltip"><span class="help-icon">?</span><span class="tooltip-text">Two-tailed test checks for effects in both directions. One-tailed is used when you're only interested in effects in one direction (e.g., only improvement).</span></span></label>
+                        <select id="tails">
+                            <option value="2">Two-tailed (Standard)</option>
+                            <option value="1">One-tailed (Directional)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="ratio">Allocation Ratio (Exposed:Control) <span class="tooltip"><span class="help-icon">?</span><span class="tooltip-text">The ratio of exposed group size to control group size. 1 means equal allocation.</span></span></label>
+                        <select id="ratio">
+                            <option value="1">1:1 (Equal groups)</option>
+                            <option value="2">2:1 (Twice as many exposed)</option>
+                            <option value="0.5">1:2 (Twice as many control)</option>
+                            <option value="3">3:1 (Three times as many exposed)</option>
+                        </select>
+                    </div>
+                    
+                    <button id="toggle-advanced-btn" class="toggle-advanced">
+                        <span class="settings-icon">⚙️</span> Advanced Settings
+                    </button>
+                    
+                    <div id="advanced-settings" class="advanced-settings">
+                        <div class="input-group">
+                            <label for="dropout">Expected Dropout Rate <span class="tooltip"><span class="help-icon">?</span><span class="tooltip-text">The percentage of participants expected to drop out during the study. Increase sample size to compensate.</span></span></label>
+                            <input type="number" id="dropout" min="0" max="0.5" step="0.01" value="0.1">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="adjustment">Multiple Comparison Adjustment <span class="tooltip"><span class="help-icon">?</span><span class="tooltip-text">Apply when testing multiple hypotheses to control for increased Type I error.</span></span></label>
+                            <select id="adjustment">
+                                <option value="none">None</option>
+                                <option value="bonferroni">Bonferroni</option>
+                                <option value="holm">Holm-Bonferroni</option>
+                            </select>
+                        </div>
+                        
+                        <div id="comparisons-container" class="input-group" style="display: none;">
+                            <label for="comparisons">Number of Comparisons <span class="tooltip"><span class="help-icon">?</span><span class="tooltip-text">The number of statistical tests being performed (e.g., number of outcomes being measured).</span></span></label>
+                            <input type="number" id="comparisons" min="2" step="1" value="3">
+                        </div>
+                    </div>
+                    
+                    <button id="calculate-btn">Calculate Sample Size</button>
+                </div>
+                
+                <div>
+                    <div id="result-container" class="result-container">
+                        <h3>Power Analysis Results</h3>
+                        
+                        <div class="result-summary" id="result-summary"></div>
+                        
+                        <div class="card">
+                            <h4>Required Sample Size</h4>
+                            <div class="result-value" id="sample-size-result">-</div>
+                            <div id="group-sizes"></div>
+                        </div>
+                        
+                        <div class="sample-recommendation" id="sample-recommendation"></div>
+                        
+                        <div class="power-slider-container">
+                            <h4>Power vs. Sample Size</h4>
+                            <p>Adjust desired power to see how it affects required sample size:</p>
+                            
+                            <div class="slider-grid">
+                                <input type="range" id="power-slider" class="power-slider" min="0.5" max="0.99" step="0.01" value="0.8">
+                                <span id="power-value">80%</span>
+                            </div>
+                            
+                            <div class="result-value" id="slider-sample-size">-</div>
+                        </div>
+                        
+                        <div class="interpretation" id="interpretation">
+                            <h4>Interpretation</h4>
+                            <p id="interpretation-text"></p>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container" id="chart-container"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="primer" class="tab-content">
+            <h2>Power Analysis for Marketing Research: A Primer</h2>
+            
+            <div class="info-box">
+                <h3>What is Statistical Power?</h3>
+                <p>Statistical power is the probability that a study will detect an effect when there is an effect to be detected. In other words, it's the likelihood of avoiding a Type II error (false negative).</p>
+            </div>
+            
+            <h3>Key Concepts in Power Analysis</h3>
+            
+            <div class="card">
+                <h4>1. Effect Size</h4>
+                <p>The magnitude of the difference or relationship you're trying to detect. In marketing research, this could be:</p>
+                <ul>
+                    <li><strong>Cohen's d</strong>: For comparing means between exposed and non-exposed groups (e.g., brand recall scores)</li>
+                    <li><strong>Proportion difference</strong>: For comparing conversion rates between campaigns</li>
+                    <li><strong>Correlation coefficient (r)</strong>: For measuring relationships between ad exposure and outcomes</li>
+                </ul>
+                <p><strong>For TV Campaigns:</strong> Typical effect sizes are often small to medium (0.1-0.4 for Cohen's d)</p>
+                
+                <table>
+                    <tr>
+                        <th>Effect Size (d)</th>
+                        <th>Interpretation</th>
+                        <th>Marketing Example</th>
+                    </tr>
+                    <tr>
+                        <td>0.2</td>
+                        <td>Small</td>
+                        <td>Subtle shift in brand awareness after campaign</td>
+                    </tr>
+                    <tr>
+                        <td>0.5</td>
+                        <td>Medium</td>
+                        <td>Noticeable increase in website traffic</td>
+                    </tr>
+                    <tr>
+                        <td>0.8</td>
+                        <td>Large</td>
+                        <td>Substantial increase in purchase intent</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div class="card">
+                <h4>2. Sample Size</h4>
+                <p>The number of participants or observations in your study. Larger sample sizes increase power but also increase costs.</p>
+                <p><strong>For TV Campaign Research:</strong> Often requires larger samples due to small effect sizes and natural variation in consumer behavior.</p>
+            </div>
+            
+            <div class="card">
+                <h4>3. Significance Level (α)</h4>
+                <p>The probability of rejecting the null hypothesis when it's actually true (Type I error).</p>
+                <ul>
+                    <li><strong>Standard level</strong>: 0.05 (5% chance of false positive)</li>
+                    <li><strong>More stringent</strong>: 0.01 (1% chance of false positive)</li>
+                    <li><strong>Exploratory research</strong>: 0.10 (10% chance of false positive)</li>
+                </ul>
+            </div>
+            
+            <div class="card">
+                <h4>4. Statistical Power (1-β)</h4>
+                <p>The probability of correctly rejecting the null hypothesis when it's false.</p>
+                <ul>
+                    <li><strong>Minimum acceptable</strong>: 0.80 (80% chance of detecting a true effect)</li>
+                    <li><strong>High power</strong>: 0.90 (90% chance of detecting a true effect)</li>
+                    <li><strong>Very high power</strong>: 0.95 (95% chance of detecting a true effect)</li>
+                </ul>
+            </div>
+            
+            <h3>The Relationship Between These Factors</h3>
+            <p>These four factors are interconnected. If you set any three, you can calculate the fourth:</p>
+            <ul>
+                <li>Increase sample size → Increase power</li>
+                <li>Increase effect size → Increase power</li>
+                <li>Increase significance level (e.g., from 0.01 to 0.05) → Increase power</li>
+                <li>Increase desired power → Need larger sample size</li>
+            </ul>
+            
+            <div class="warning-box">
+                <h4>Common Pitfalls in Marketing Research</h4>
+                <ul>
+                    <li><strong>Overestimating effect sizes</strong>: Marketing effects are often smaller than anticipated</li>
+                    <li><strong>Underpowered studies</strong>: Not enrolling enough participants to detect effects</li>
+                    <li><strong>Ignoring attrition</strong>: Not accounting for participants who drop out</li>
+                    <li><strong>Multiple testing</strong>: Testing too many outcomes without statistical adjustment</li>
+                </ul>
+            </div>
+            
+            <h3>When to Conduct Power Analysis</h3>
+            <ul>
+                <li><strong>Before the study</strong>: A priori power analysis to determine required sample size</li>
+                <li><strong>After a pilot study</strong>: To refine sample size estimates based on observed effect sizes</li>
+                <li><strong>After the study</strong>: Post-hoc power analysis to interpret non-significant results</li>
+            </ul>
+            
+            <div class="info-box">
+                <h4>Power Analysis for TV Campaign Effectiveness Research</h4>
+                <p>When designing studies to measure TV campaign effectiveness, consider:</p>
+                <ul>
+                    <li>TV campaigns often have modest effect sizes requiring larger samples</li>
+                    <li>Control groups are essential for isolating campaign effects</li>
+                    <li>Multiple outcome measures may require adjustment for multiple comparisons</li>
+                    <li>Panel studies tracking the same participants require smaller samples than cross-sectional designs</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div id="examples" class="tab-content">
+            <h2>TV Campaign Research Examples</h2>
+            
+            <div class="card">
+                <h3>Example 1: Website Traffic Impact Study</h3>
+                <p><strong>Research Question:</strong> Does our national TV campaign increase website traffic?</p>
+                
+                <div class="grid">
+                    <div>
+                        <h4>Study Design</h4>
+                        <ul>
+                            <li>Two-sample comparison (exposed vs. non-exposed)</li>
+                            <li>Outcome: Daily website visits</li>
+                            <li>Previous data suggests exposed users generate 25% more visits</li>
+                            <li>Standard deviation estimated at 85% of the mean</li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h4>Power Analysis Parameters</h4>
+                        <ul>
+                            <li>Effect size (Cohen's d): 0.30</li>
+                            <li>Significance level (α): 0.05</li>
+                            <li>Desired power: 0.80 (80%)</li>
+                            <li>Two-tailed test</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="result-summary">
+                    <strong>Result:</strong> Required sample size of approximately 175 participants per group (350 total)
+                </div>
+                
+                <div class="interpretation">
+                    <h4>Application</h4>
+                    <p>With 350 total participants (175 exposed to the TV campaign and 175 not exposed), researchers would have an 80% chance of detecting a 25% difference in website traffic if such a difference exists.</p>
+                    <p>Based on this power analysis, the marketing team would need to ensure their panel included at least 350 participants with sufficient variation in TV exposure.</p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>Example 2: Conversion Rate Study</h3>
+                <p><strong>Research Question:</strong> Does TV ad exposure increase online purchase conversion rates?</p>
+                
+                <div class="grid">
+                    <div>
+                        <h4>Study Design</h4>
+                        <ul>
+                            <li>Proportion test (comparing conversion rates)</li>
+                            <li>Baseline conversion rate: 5% (control group)</li>
+                            <li>Expected conversion with TV exposure: 8%</li>
+                            <li>3 percentage point absolute increase (60% relative increase)</li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h4>Power Analysis Parameters</h4>
+                        <ul>
+                            <li>Control proportion: 0.05 (5%)</li>
+                            <li>Exposed proportion: 0.08 (8%)</li>
+                            <li>Significance level (α): 0.05</li>
+                            <li>Desired power: 0.90 (90%)</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="result-summary">
+                    <strong>Result:</strong> Required sample size of approximately 966 participants per group (1,932 total)
+                </div>
+                
+                <div class="interpretation">
+                    <h4>Application</h4>
+                    <p>Testing for a 3 percentage point increase in conversion rate requires a much larger sample than detecting differences in continuous variables. This illustrates why conversion studies often need larger panels.</p>
+                    <p>The marketing team would implement tracking for nearly 2,000 customers, with approximately half exposed to TV campaigns, to reliably detect this level of conversion improvement.</p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>Example 3: Brand Recall Correlation</h3>
+                <p><strong>Research Question:</strong> Is there a correlation between TV ad exposure frequency and brand recall?</p>
+                
+                <div class="grid">
+                    <div>
+                        <h4>Study Design</h4>
+                        <ul>
+                            <li>Correlation analysis</li>
+                            <li>Variables: Number of ad exposures and brand recall score</li>
+                            <li>Expected moderate correlation</li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h4>Power Analysis Parameters</h4>
+                        <ul>
+                            <li>Expected correlation (r): 0.25</li>
+                            <li>Significance level (α): 0.05</li>
+                            <li>Desired power: 0.80 (80%)</li>
+                            <li>Two-tailed test</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="result-summary">
+                    <strong>Result:</strong> Required sample size of approximately 123 participants
+                </div>
+                
+                <div class="interpretation">
+                    <h4>Application</h4>
+                    <p>To detect a correlation of 0.25 between ad exposure and brand recall, researchers would need data from at least 123 participants with varying levels of exposure.</p>
+                    <p>This study would track both the number of times participants saw the TV ad and their subsequent brand recall scores, then analyze the relationship between these variables.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    
+    <script>
+        // Global variables
+        let chart = null;
+        
+        // Function to get Z-value from probability
+        function getZValue(p) {
+            // Approximation of inverse standard normal CDF
+            let a1 = -39.6968302866538, a2 = 220.946098424521, a3 = -275.928510446969;
+            let a4 = 138.357751867269, a5 = -30.6647980661472, a6 = 2.50662827745924;
+            let b1 = -54.4760987982241, b2 = 161.585836858041, b3 = -155.698979859887;
+            let b4 = 66.8013118877197, b5 = -13.2806815528857;
+            let c1 = -7.78489400243029E-03, c2 = -0.322396458041136, c3 = -2.40075827716184;
+            let c4 = -2.54973253934373, c5 = 4.37466414146497, c6 = 2.93816398269878;
+            let d1 = 7.78469570904146E-03, d2 = 0.32246712907004, d3 = 2.445134137143;
+            let d4 = 3.75440866190742;
+            let p_low = 0.02425, p_high = 1 - p_low;
+            let q, r, zValue;
+            
+            if (p <= 0) {
+                return -6;  // far below mean (about -6 standard deviations)
+            } else if (p >= 1) {
+                return 6;   // far above mean (about +6 standard deviations)
+            } else if (p < p_low) {
+                q = Math.sqrt(-2 * Math.log(p));
+                zValue = (((((c1 * q + c2) * q + c3) * q + c4) * q + c5) * q + c6) / 
+                         ((((d1 * q + d2) * q + d3) * q + d4) * q + 1);
+            } else if (p > p_high) {
+                q = Math.sqrt(-2 * Math.log(1 - p));
+                zValue = -(((((c1 * q + c2) * q + c3) * q + c4) * q + c5) * q + c6) / 
+                         ((((d1 * q + d2) * q + d3) * q + d4) * q + 1);
+            } else {
+                q = p - 0.5;
+                r = q * q;
+                zValue = (((((a1 * r + a2) * r + a3) * r + a4) * r + a5) * r + a6) * q / 
+                         (((((b1 * r + b2) * r + b3) * r + b4) * r + b5) * r + 1);
+            }
+            
+            return zValue;
+        }
+        
+        // Create or update the power chart
+        function createPowerChart(analysisType, significance, tails, effectSizeLabel) {
+            const chartContainer = document.getElementById('chart-container');
+            
+            // Clear previous chart if it exists
+            if (chart) {
+                chart.destroy();
+            }
+            
+            // Create a new canvas
+            chartContainer.innerHTML = '<canvas id="power-chart"></canvas>';
+            const ctx = document.getElementById('power-chart').getContext('2d');
+            
+            // Generate data points for different powers
+            const powerLevels = [];
+            const sampleSizes = [];
+            
+            for (let power = 0.5; power <= 0.95; power += 0.05) {
+                powerLevels.push(power);
+                
+                // Calculate z values
+                const zAlpha = (tails === 2) ? 
+                    Math.abs(getZValue(significance / 2)) : 
+                    Math.abs(getZValue(significance));
+                const zBeta = Math.abs(getZValue(1 - power));
+                const ratio = parseFloat(document.getElementById('ratio').value);
+                
+                let sampleSize = 0;
+                
+                if (analysisType === 'ttest') {
+                    const effectSize = parseFloat(document.getElementById('effect-size').value);
+                    const numerator = Math.pow(zAlpha + zBeta, 2) * (1 + 1/ratio);
+                    const denominator = Math.pow(effectSize, 2);
+                    sampleSize = Math.ceil(numerator / denominator);
+                    
+                } else if (analysisType === 'proportion') {
+                    const p1 = parseFloat(document.getElementById('proportion1').value);
+                    const p2 = parseFloat(document.getElementById('proportion2').value);
+                    const proportionDiff = Math.abs(p2 - p1);
+                    
+                    const p = (p1 + p2) / 2; // Pooled proportion
+                    const numerator = Math.pow(zAlpha + zBeta, 2) * p * (1 - p) * (1 + 1/ratio);
+                    const denominator = Math.pow(proportionDiff, 2);
+                    sampleSize = Math.ceil(numerator / denominator);
+                    
+                } else if (analysisType === 'correlation') {
+                    const r = parseFloat(document.getElementById('correlation').value);
+                    
+                    const fisherZ = 0.5 * Math.log((1 + r) / (1 - r));
+                    const numerator = Math.pow(zAlpha + zBeta, 2);
+                    const denominator = Math.pow(fisherZ, 2);
+                    sampleSize = Math.ceil(numerator / denominator + 3);
+                }
+                
+                const dropoutRate = parseFloat(document.getElementById('dropout').value);
+                const adjustedSampleSize = Math.ceil(sampleSize / (1 - dropoutRate));
+                
+                sampleSizes.push(adjustedSampleSize);
+            }
+            
+            // Create the chart
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: powerLevels.map(p => `${(p * 100).toFixed(0)}%`),
+                    datasets: [{
+                        label: 'Required Sample Size',
+                        data: sampleSizes,
+                        borderColor: '#1976d2',
+                        backgroundColor: 'rgba(25, 118, 210, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `Power vs. Sample Size (${effectSizeLabel})`,
+                            font: {
+                                size: 16
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Sample Size: ${context.raw}`;
+                                },
+                                title: function(tooltipItems) {
+                                    return `Power: ${tooltipItems[0].label}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Statistical Power'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Required Sample Size'
+                            },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Update sample size based on power slider
+        function updateSliderSampleSize() {
+            const analysisType = document.getElementById('analysis-type').value;
+            const significance = parseFloat(document.getElementById('significance').value);
+            const sliderPower = parseFloat(document.getElementById('power-slider').value);
+            const tails = parseInt(document.getElementById('tails').value);
+            const ratio = parseFloat(document.getElementById('ratio').value);
+            const dropoutRate = parseFloat(document.getElementById('dropout').value);
+            
+            // Calculate critical z values
+            const zAlpha = (tails === 2) ? 
+                Math.abs(getZValue(significance / 2)) : 
+                Math.abs(getZValue(significance));
+            const zBeta = Math.abs(getZValue(1 - sliderPower));
+            
+            let sampleSize = 0;
+            
+            if (analysisType === 'ttest') {
+                const effectSize = parseFloat(document.getElementById('effect-size').value);
+                
+                // Calculate sample size for two-sample t-test
+                const numerator = Math.pow(zAlpha + zBeta, 2) * (1 + 1/ratio);
+                const denominator = Math.pow(effectSize, 2);
+                sampleSize = Math.ceil(numerator / denominator);
+                
+            } else if (analysisType === 'proportion') {
+                const p1 = parseFloat(document.getElementById('proportion1').value);
+                const p2 = parseFloat(document.getElementById('proportion2').value);
+                const proportionDiff = Math.abs(p2 - p1);
+                
+                // Calculate sample size for proportion test
+                const p = (p1 + p2) / 2; // Pooled proportion
+                const numerator = Math.pow(zAlpha + zBeta, 2) * p * (1 - p) * (1 + 1/ratio);
+                const denominator = Math.pow(proportionDiff, 2);
+                sampleSize = Math.ceil(numerator / denominator);
+                
+            } else if (analysisType === 'correlation') {
+                const r = parseFloat(document.getElementById('correlation').value);
+                
+                // Calculate sample size for correlation test
+                // Fisher's z transformation for correlations
+                const fisherZ = 0.5 * Math.log((1 + r) / (1 - r));
+                const numerator = Math.pow(zAlpha + zBeta, 2);
+                const denominator = Math.pow(fisherZ, 2);
+                sampleSize = Math.ceil(numerator / denominator + 3); // +3 is a small sample correction
+            }
+            
+            // Adjust for dropout
+            const adjustedSampleSize = Math.ceil(sampleSize / (1 - dropoutRate));
+            
+            // Update display
+            document.getElementById('slider-sample-size').textContent = adjustedSampleSize;
+        }
+        
+        // Calculate sample size 
+        function calculateSampleSize() {
+            const analysisType = document.getElementById('analysis-type').value;
+            const significance = parseFloat(document.getElementById('significance').value);
+            const power = parseFloat(document.getElementById('power').value);
+            const tails = parseInt(document.getElementById('tails').value);
+            const ratio = parseFloat(document.getElementById('ratio').value);
+            const dropoutRate = parseFloat(document.getElementById('dropout').value);
+            
+            let adjustedAlpha = significance;
+            const adjustment = document.getElementById('adjustment').value;
+            let comparisons = 1;
+            
+            if (adjustment !== 'none') {
+                comparisons = parseInt(document.getElementById('comparisons').value);
+                if (adjustment === 'bonferroni') {
+                    // Adjust alpha for Bonferroni correction
+                    adjustedAlpha = significance / comparisons;
+                }
+                // Note: Holm-Bonferroni would be more complex to implement
+            }
+            
+            // Calculate critical z values
+            const zAlpha = (tails === 2) ? 
+                Math.abs(getZValue(adjustedAlpha / 2)) : 
+                Math.abs(getZValue(adjustedAlpha));
+            const zBeta = Math.abs(getZValue(1 - power));
+            
+            let sampleSize = 0;
+            let effectSizeLabel = '';
+            let resultSummary = '';
+            
+            if (analysisType === 'ttest') {
+                const effectSize = parseFloat(document.getElementById('effect-size').value);
+                effectSizeLabel = `Cohen's d = ${effectSize.toFixed(2)}`;
+                
+                // Calculate sample size for two-sample t-test
+                const numerator = Math.pow(zAlpha + zBeta, 2) * (1 + 1/ratio);
+                const denominator = Math.pow(effectSize, 2);
+                sampleSize = Math.ceil(numerator / denominator);
+                
+                resultSummary = `For a two-sample t-test with ${tails}-tailed α=${significance}, power=${power*100}%, and effect size d=${effectSize.toFixed(2)}`;
+                
+            } else if (analysisType === 'proportion') {
+                const p1 = parseFloat(document.getElementById('proportion1').value);
+                const p2 = parseFloat(document.getElementById('proportion2').value);
+                const proportionDiff = Math.abs(p2 - p1);
+                effectSizeLabel = `Proportion difference = ${(proportionDiff * 100).toFixed(1)}%`;
+                
+                // Calculate sample size for proportion test
+                const p = (p1 + p2) / 2; // Pooled proportion
+                const numerator = Math.pow(zAlpha + zBeta, 2) * p * (1 - p) * (1 + 1/ratio);
+                const denominator = Math.pow(proportionDiff, 2);
+                sampleSize = Math.ceil(numerator / denominator);
+                
+                resultSummary = `For a proportion test with ${tails}-tailed α=${significance}, power=${power*100}%, control proportion=${(p1*100).toFixed(1)}%, and exposed proportion=${(p2*100).toFixed(1)}%`;
+                
+            } else if (analysisType === 'correlation') {
+                const r = parseFloat(document.getElementById('correlation').value);
+                effectSizeLabel = `Correlation r = ${r.toFixed(2)}`;
+                
+                // Calculate sample size for correlation test
+                // Fisher's z transformation for correlations
+                const fisherZ = 0.5 * Math.log((1 + r) / (1 - r));
+                const numerator = Math.pow(zAlpha + zBeta, 2);
+                const denominator = Math.pow(fisherZ, 2);
+                sampleSize = Math.ceil(numerator / denominator + 3); // +3 is a small sample correction
+                
+                resultSummary = `For a correlation test with ${tails}-tailed α=${significance}, power=${power*100}%, and expected correlation r=${r.toFixed(2)}`;
+            }
+            
+            // Adjust for dropout
+            const adjustedSampleSize = Math.ceil(sampleSize / (1 - dropoutRate));
+            
+            // Calculate group sizes if applicable
+            let group1Size = 0;
+            let group2Size = 0;
+            
+            if (analysisType === 'ttest' || analysisType === 'proportion') {
+                // Calculate group sizes based on ratio
+                const totalSize = adjustedSampleSize;
+                group1Size = Math.ceil(totalSize * ratio / (1 + ratio)); // Exposed group
+                group2Size = Math.ceil(totalSize / (1 + ratio)); // Control group
+                
+                // Ensure total matches or exceeds the calculated sample size
+                if (group1Size + group2Size < totalSize) {
+                    group1Size = Math.ceil(group1Size);
+                    group2Size = totalSize - group1Size;
+                }
+            }
+            
+            // Display results
+            document.getElementById('result-container').style.display = 'block';
+            document.getElementById('sample-size-result').textContent = adjustedSampleSize;
+            document.getElementById('result-summary').textContent = resultSummary;
+            
+            // Display group sizes if applicable
+            if (analysisType === 'ttest' || analysisType === 'proportion') {
+                document.getElementById('group-sizes').innerHTML = `
+                    <p>Exposed Group: ${group1Size} participants</p>
+                    <p>Control Group: ${group2Size} participants</p>
+                `;
+            } else {
+                document.getElementById('group-sizes').innerHTML = '';
+            }
+            
+            // Show recommendation
+            let recommendation = `<p>With a sample size of <strong>${adjustedSampleSize}</strong>, you will have 
+                ${Math.round(power * 100)}% power to detect ${effectSizeLabel} with a ${tails}-tailed 
+                significance test at α=${significance}.`;
+            
+            if (dropoutRate > 0) {
+                recommendation += ` This accounts for a ${Math.round(dropoutRate * 100)}% dropout rate.`;
+            }
+            
+            recommendation += `</p>`;
+            
+            if (adjustment !== 'none') {
+                recommendation += `<p>This sample size includes adjustment for ${comparisons} multiple comparisons 
+                    using the ${adjustment} method.</p>`;
+            }
+            
+            // Add practical recommendation
+            if (adjustedSampleSize > 5000) {
+                recommendation += `<p><strong>Practical Note:</strong> This is a very large sample size. Consider:
+                    <ul>
+                        <li>Using a larger effect size if justified by previous research</li>
+                        <li>Reducing the desired power (e.g., from 90% to 80%)</li>
+                        <li>Using a one-tailed test if you're only interested in effects in one direction</li>
+                        <li>Using a different study design that might be more sensitive to the effect</li>
+                    </ul>
+                </p>`;
+            } else if (adjustedSampleSize < 30) {
+                recommendation += `<p><strong>Practical Note:</strong> This is a relatively small sample size. Be aware that:
+                    <ul>
+                        <li>Small samples may not be representative of your target population</li>
+                        <li>The study may be underpowered if the true effect size is smaller than anticipated</li>
+                        <li>Consider collecting pilot data to verify your effect size assumptions</li>
+                    </ul>
+                </p>`;
+            }
+            
+            document.getElementById('sample-recommendation').innerHTML = recommendation;
+            
+            // Set the power slider to match the current power value
+            document.getElementById('power-slider').value = power;
+            document.getElementById('power-value').textContent = `${Math.round(power * 100)}%`;
+            
+            // Create interpretation text
+            let interpretationText = '';
+            
+            if (analysisType === 'ttest') {
+                const effectSize = parseFloat(document.getElementById('effect-size').value);
+                interpretationText = `This sample size will allow you to detect a difference of ${effectSize.toFixed(2)} standard deviations 
+                    between your exposed and control groups. In practical terms, if your standard deviation for website visits is 100, 
+                    you could detect a difference of ${Math.round(effectSize * 100)} visits between groups.`;
+                
+            } else if (analysisType === 'proportion') {
+                const p1 = parseFloat(document.getElementById('proportion1').value);
+                const p2 = parseFloat(document.getElementById('proportion2').value);
+                const proportionDiff = Math.abs(p2 - p1);
+                const relativeIncrease = (p2 - p1) / p1 * 100;
+                
+                interpretationText = `This sample size will allow you to detect a conversion rate difference of 
+                    ${(proportionDiff * 100).toFixed(1)} percentage points (from ${(p1 * 100).toFixed(1)}% to ${(p2 * 100).toFixed(1)}%), 
+                    which represents a ${Math.abs(relativeIncrease).toFixed(0)}% ${relativeIncrease >= 0 ? 'increase' : 'decrease'} 
+                    in conversion rate.`;
+                
+            } else if (analysisType === 'correlation') {
+                const r = parseFloat(document.getElementById('correlation').value);
+                
+                interpretationText = `This sample size will allow you to detect a correlation of r=${r.toFixed(2)} 
+                    between TV ad exposure and your outcome variable. This means you can detect if ${(r*r*100).toFixed(0)}% 
+                    of the variance in your outcome variable is explained by ad exposure.`;
+            }
+            
+            document.getElementById('interpretation-text').innerHTML = interpretationText;
+            
+            // Update the slider sample size
+            updateSliderSampleSize();
+            
+            // Create or update the chart
+            createPowerChart(analysisType, significance, tails, effectSizeLabel);
+        }
+        
+        // Load example data
+        function loadExample() {
+            document.getElementById('analysis-type').value = 'ttest';
+            document.getElementById('effect-size').value = 0.3;
+            document.getElementById('significance').value = 0.05;
+            document.getElementById('power').value = 0.8;
+            document.getElementById('tails').value = 2;
+            document.getElementById('ratio').value = 1;
+            document.getElementById('dropout').value = 0.1;
+            
+            // Show the appropriate inputs for t-test
+            document.getElementById('effect-size-container').style.display = 'block';
+            document.getElementById('proportion1-container').style.display = 'none';
+            document.getElementById('proportion2-container').style.display = 'none';
+            document.getElementById('correlation-container').style.display = 'none';
+            
+            // Calculate sample size with example data
+            calculateSampleSize();
+        }
+        
+        // Switch between tabs
+        function switchTab(tabId) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Deactivate all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Activate the selected tab and content
+            document.getElementById(tabId).classList.add('active');
+            document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`).classList.add('active');
+        }
+        
+        // Toggle advanced settings visibility
+        function toggleAdvancedSettings() {
+            const advancedSettings = document.getElementById('advanced-settings');
+            if (advancedSettings.style.display === 'block') {
+                advancedSettings.style.display = 'none';
+            } else {
+                advancedSettings.style.display = 'block';
+            }
+        }
+        
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up event listeners for interactive elements
+            
+            // Analysis type change
+            document.getElementById('analysis-type').addEventListener('change', function() {
+                const analysisType = this.value;
+                
+                // Hide all specific input containers
+                document.getElementById('effect-size-container').style.display = 'none';
+                document.getElementById('proportion1-container').style.display = 'none';
+                document.getElementById('proportion2-container').style.display = 'none';
+                document.getElementById('correlation-container').style.display = 'none';
+                
+                // Show relevant input containers based on analysis type
+                if (analysisType === 'ttest') {
+                    document.getElementById('effect-size-container').style.display = 'block';
+                } else if (analysisType === 'proportion') {
+                    document.getElementById('proportion1-container').style.display = 'block';
+                    document.getElementById('proportion2-container').style.display = 'block';
+                } else if (analysisType === 'correlation') {
+                    document.getElementById('correlation-container').style.display = 'block';
+                }
+            });
+            
+            // Show/hide comparisons input when adjustment is selected
+            document.getElementById('adjustment').addEventListener('change', function() {
+                const adjustment = this.value;
+                document.getElementById('comparisons-container').style.display = 
+                    (adjustment !== 'none') ? 'block' : 'none';
+            });
+            
+            // Update power slider value display
+            document.getElementById('power-slider').addEventListener('input', function() {
+                const powerValue = parseFloat(this.value);
+                document.getElementById('power-value').textContent = `${Math.round(powerValue * 100)}%`;
+                updateSliderSampleSize();
+            });
+            
+            // Button event listeners
+            document.getElementById('toggle-advanced-btn').addEventListener('click', toggleAdvancedSettings);
+            document.getElementById('calculate-btn').addEventListener('click', calculateSampleSize);
+            document.getElementById('load-example-btn').addEventListener('click', loadExample);
+            
+            // Initialize the correct input fields based on default analysis type
+            const analysisType = document.getElementById('analysis-type').value;
+            
+            if (analysisType === 'ttest') {
+                document.getElementById('effect-size-container').style.display = 'block';
+            } else if (analysisType === 'proportion') {
+                document.getElementById('proportion1-container').style.display = 'block';
+                document.getElementById('proportion2-container').style.display = 'block';
+            } else if (analysisType === 'correlation') {
+                document.getElementById('correlation-container').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

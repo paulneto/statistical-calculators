@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mann-Whitney U Test Calculator</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    
+    <style>
+        body { 
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen py-12">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const MannWhitneyCalculator = () => {
+            const [groupA, setGroupA] = React.useState({
+                data: [],
+                name: 'Group A'
+            });
+            const [groupB, setGroupB] = React.useState({
+                data: [],
+                name: 'Group B'
+            });
+            const [confidenceLevel, setConfidenceLevel] = React.useState(95);
+            const [groupAText, setGroupAText] = React.useState('');
+            const [groupBText, setGroupBText] = React.useState('');
+
+            // Example data sets
+            const exampleData = {
+                sessionDurations: {
+                    groupA: '45, 38, 52, 48, 51, 39, 44, 47',
+                    groupB: '35, 31, 42, 40, 38, 33, 36, 40'
+                },
+                engagementScores: {
+                    groupA: '8.5, 7.9, 8.2, 8.8, 8.1, 8.4',
+                    groupB: '7.2, 7.8, 7.4, 7.1, 7.5, 7.3'
+                }
+            };
+
+            const processTextInput = (text) => {
+                return text
+                    .split(/[\n,\s]+/)
+                    .map(num => num.trim())
+                    .filter(num => num !== '' && !isNaN(num))
+                    .map(num => parseFloat(num));
+            };
+
+            const handleGroupATextChange = (e) => {
+                setGroupAText(e.target.value);
+                const numbers = processTextInput(e.target.value);
+                setGroupA(prev => ({ ...prev, data: numbers }));
+            };
+
+            const handleGroupBTextChange = (e) => {
+                setGroupBText(e.target.value);
+                const numbers = processTextInput(e.target.value);
+                setGroupB(prev => ({ ...prev, data: numbers }));
+            };
+
+            // Calculate rank sums and U statistic
+            const calculateMannWhitney = (dataA, dataB) => {
+                if (!dataA.length || !dataB.length) return null;
+
+                // Combine and rank all values
+                const combined = [...dataA.map(v => ({ value: v, group: 'A' })),
+                                 ...dataB.map(v => ({ value: v, group: 'B' }))]
+                    .sort((a, b) => a.value - b.value);
+
+                // Assign ranks (handling ties)
+                let currentRank = 1;
+                for (let i = 0; i < combined.length; i++) {
+                    let tieCount = 1;
+                    while (i + tieCount < combined.length && 
+                           combined[i].value === combined[i + tieCount].value) {
+                        tieCount++;
+                    }
+                    
+                    const averageRank = currentRank + (tieCount - 1) / 2;
+                    for (let j = 0; j < tieCount; j++) {
+                        combined[i + j].rank = averageRank;
+                    }
+                    
+                    currentRank += tieCount;
+                    i += tieCount - 1;
+                }
+
+                // Calculate rank sums and U statistics
+                const rankSumA = combined
+                    .filter(x => x.group === 'A')
+                    .reduce((sum, x) => sum + x.rank, 0);
+                    
+                const n1 = dataA.length;
+                const n2 = dataB.length;
+                
+                const U1 = rankSumA - (n1 * (n1 + 1)) / 2;
+                const U2 = n1 * n2 - U1;
+                
+                // Use smaller U value
+                const U = Math.min(U1, U2);
+                
+                // Calculate z-score for large samples (n > 20)
+                const mean = (n1 * n2) / 2;
+                const stdDev = Math.sqrt((n1 * n2 * (n1 + n2 + 1)) / 12);
+                const zScore = (U - mean) / stdDev;
+                
+                // Critical values for different confidence levels
+                const criticalValues = {
+                    99: 2.576,
+                    95: 1.96,
+                    90: 1.645,
+                    80: 1.28
+                };
+                
+                return {
+                    U,
+                    zScore: Math.abs(zScore),
+                    significant: Math.abs(zScore) > criticalValues[confidenceLevel],
+                    medianA: calculateMedian(dataA),
+                    medianB: calculateMedian(dataB),
+                    sampleSizeA: n1,
+                    sampleSizeB: n2
+                };
+            };
+
+            const calculateMedian = (arr) => {
+                const sorted = [...arr].sort((a, b) => a - b);
+                const mid = Math.floor(sorted.length / 2);
+                return sorted.length % 2 === 0
+                    ? ((sorted[mid - 1] + sorted[mid]) / 2).toFixed(1)
+                    : sorted[mid].toFixed(1);
+            };
+
+            const loadExampleData = (dataSet) => {
+                setGroupAText(exampleData[dataSet].groupA);
+                setGroupBText(exampleData[dataSet].groupB);
+                setGroupA(prev => ({ ...prev, data: processTextInput(exampleData[dataSet].groupA) }));
+                setGroupB(prev => ({ ...prev, data: processTextInput(exampleData[dataSet].groupB) }));
+            };
+
+            const result = calculateMannWhitney(groupA.data, groupB.data);
+
+            return (
+                <div className="max-w-7xl mx-auto px-4">
+                    <div className="bg-white rounded-lg shadow-lg p-6">
+                        <h1 className="text-2xl font-bold mb-4">Mann-Whitney U Test Calculator</h1>
+                        
+                        {/* Example Data Buttons */}
+                        <div className="mb-6">
+                            <h3 className="font-medium mb-2">Load Example Data</h3>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => loadExampleData('sessionDurations')}
+                                    className="px-4 py-2 rounded bg-blue-100 hover:bg-blue-200"
+                                >
+                                    Session Durations
+                                </button>
+                                <button
+                                    onClick={() => loadExampleData('engagementScores')}
+                                    className="px-4 py-2 rounded bg-blue-100 hover:bg-blue-200"
+                                >
+                                    Engagement Scores
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Confidence Level Selection */}
+                        <div className="mb-6">
+                            <h3 className="font-medium mb-2">Confidence Level</h3>
+                            <div className="flex gap-2">
+                                {[99, 95, 90, 80].map((level) => (
+                                    <button
+                                        key={level}
+                                        onClick={() => setConfidenceLevel(level)}
+                                        className={`px-4 py-2 rounded ${
+                                            confidenceLevel === level
+                                                ? 'bg-blue-500 text-white'
+                                                : 'bg-gray-200'
+                                        }`}
+                                    >
+                                        {level}%
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Group Inputs */}
+                        <div className="grid md:grid-cols-2 gap-6">
+                            {/* Group A */}
+                            <div>
+                                <h3 className="font-medium mb-2">Group A</h3>
+                                <textarea
+                                    value={groupAText}
+                                    onChange={handleGroupATextChange}
+                                    className="w-full h-32 border rounded p-2"
+                                    placeholder="Enter values (one per line or comma-separated)"
+                                />
+                                {groupA.data.length > 0 && (
+                                    <div className="mt-2 text-sm text-gray-600">
+                                        Sample size: {groupA.data.length}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Group B */}
+                            <div>
+                                <h3 className="font-medium mb-2">Group B</h3>
+                                <textarea
+                                    value={groupBText}
+                                    onChange={handleGroupBTextChange}
+                                    className="w-full h-32 border rounded p-2"
+                                    placeholder="Enter values (one per line or comma-separated)"
+                                />
+                                {groupB.data.length > 0 && (
+                                    <div className="mt-2 text-sm text-gray-600">
+                                        Sample size: {groupB.data.length}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Results */}
+                        {result && (
+                            <div className="mt-6">
+                                <h3 className="font-medium mb-2">Results</h3>
+                                <div className="bg-gray-50 p-4 rounded">
+                                    <div className="grid grid-cols-2 gap-4 mb-4">
+                                        <div>
+                                            <p className="text-sm text-gray-600">Group A Median</p>
+                                            <p className="text-lg font-medium">{result.medianA}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-600">Group B Median</p>
+                                            <p className="text-lg font-medium">{result.medianB}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-600">U Statistic</p>
+                                            <p className="text-lg font-medium">{result.U.toFixed(2)}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-600">Z-Score</p>
+                                            <p className="text-lg font-medium">{result.zScore.toFixed(2)}</p>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white p-3 rounded">
+                                        <p className="font-medium">
+                                            Result: 
+                                            <span className={`ml-2 px-2 py-1 rounded ${
+                                                result.significant 
+                                                    ? 'bg-green-100 text-green-800' 
+                                                    : 'bg-yellow-100 text-yellow-800'
+                                            }`}>
+                                                {result.significant 
+                                                    ? 'Significant Difference' 
+                                                    : 'No Significant Difference'}
+                                            </span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Interpretation Guide */}
+                        <div className="mt-8 bg-gray-50 p-4 rounded">
+                            <h3 className="font-medium mb-4">When to Use the Mann-Whitney U Test</h3>
+                            <div className="space-y-3">
+                                <p><strong>Best Used For:</strong></p>
+                                <ul className="list-disc pl-5 space-y-2">
+                                    <li>Comparing continuous data between two independent groups</li>
+                                    <li>When data doesn't follow a normal distribution</li>
+                                    <li>Small sample sizes</li>
+                                    <li>When comparing medians is more appropriate than means</li>
+                                </ul>
+                                
+                                <p><strong>Common Applications:</strong></p>
+                                <ul className="list-disc pl-5 space-y-2">
+                                    <li>Session durations between different user groups</li>
+                                    <li>Engagement scores that might be skewed</li>
+                                    <li>Response times or other metrics with potential outliers</li>
+                                    <li>User ratings or satisfaction scores</li>
+                                </ul>
+                            </div>
+
+                            <h3 className="font-medium mt-4 mb-2">How to Interpret Results</h3>
+                            <div className="space-y-3">
+                                <p><strong>U Statistic:</strong> The Mann-Whitney U test statistic. Lower values suggest greater difference between groups.</p>
+                                <p><strong>Z-Score:</strong> For larger samples (n > 20), indicates how many standard deviations the U statistic is from the mean. At {confidenceLevel}% confidence, needs to be greater than {
+                                    confidenceLevel === 99 ? '2.576' :
+                                    confidenceLevel === 95 ? '1.96' :
+                                    confidenceLevel === 90 ? '1.645' : '1.28'
+                                } to be significant.</p>
+                                <p><strong>Significance:</strong> Indicates whether the difference between groups is statistically significant at the chosen confidence level.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<MannWhitneyCalculator />, document.getElementById('root'));
+    </script>
+</body>
+</html>

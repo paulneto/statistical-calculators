@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chi-Square Calculator</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+  <div class="max-w-7xl mx-auto p-4">
+    <div class="bg-white rounded-lg shadow p-6">
+      <h1 class="text-2xl font-bold mb-6">Chi-Square Calculator</h1>
+      
+      <div class="mb-4">
+        <div class="border-b border-gray-200">
+          <nav class="-mb-px flex">
+            <button id="goodnessTab" class="py-2 px-4 border-b-2 border-blue-500 text-blue-600">Goodness of Fit</button>
+            <button id="independenceTab" class="py-2 px-4 border-b-2 border-transparent">Test of Independence</button>
+          </nav>
+        </div>
+      </div>
+
+      <div id="goodnessContent">
+        <div class="grid md:grid-cols-3 gap-6">
+          <div>
+            <h3 class="font-medium mb-2">Categories</h3>
+            <textarea id="categories" class="w-full h-48 border rounded p-2" placeholder="Enter category names (one per line)">0-14 years
+15-24 years
+25-44 years
+45-64 years
+65+ years</textarea>
+          </div>
+          <div>
+            <h3 class="font-medium mb-2">Observed Values</h3>
+            <textarea id="observed" class="w-full h-48 border rounded p-2" placeholder="Enter observed values (one per line)">220
+180
+340
+160
+100</textarea>
+          </div>
+          <div>
+            <h3 class="font-medium mb-2">Expected Values</h3>
+            <textarea id="expected" class="w-full h-48 border rounded p-2" placeholder="Enter expected values (one per line)">180
+160
+320
+200
+140</textarea>
+          </div>
+        </div>
+      </div>
+
+      <div id="independenceContent" class="hidden">
+        <div class="grid md:grid-cols-3 gap-6">
+          <div>
+            <h3 class="font-medium mb-2">Row Labels</h3>
+            <textarea id="rowLabels" class="w-full h-48 border rounded p-2" placeholder="Enter row labels (one per line)">High School
+Bachelor's
+Graduate
+Professional</textarea>
+            <p class="text-sm text-gray-600 mt-1">Each row represents a category (e.g., education levels)</p>
+          </div>
+          <div>
+            <h3 class="font-medium mb-2">Column Labels</h3>
+            <textarea id="colLabels" class="w-full h-48 border rounded p-2" placeholder="Enter column labels (one per line)">Employed
+Self-employed
+Unemployed</textarea>
+            <p class="text-sm text-gray-600 mt-1">Each column represents a category (e.g., employment status)</p>
+          </div>
+          <div>
+            <h3 class="font-medium mb-2">Contingency Table</h3>
+            <textarea id="contingencyTable" class="w-full h-48 border rounded p-2" placeholder="Enter values (space/comma separated, one row per line)">150 30 45
+280 75 35
+180 60 20
+90 45 10</textarea>
+            <p class="text-sm text-gray-600 mt-1">Enter frequencies for each combination. Each row should have values for each column, separated by spaces.</p>
+            <div class="bg-blue-50 p-2 rounded mt-2 text-sm">
+              <p class="font-medium">Format Example:</p>
+              <pre class="bg-white p-1 mt-1 text-xs whitespace-pre">150 30 45     High School row
+280 75 35     Bachelor's row
+180 60 20     Graduate row
+90  45 10     Professional row
+
+E   S   U     
+(E=Employed, S=Self-employed, U=Unemployed)</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button id="calculate" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Calculate</button>
+
+      <div id="results" class="mt-6 bg-gray-50 p-4 rounded hidden">
+        <h3 class="font-medium mb-4">Results</h3>
+        <div class="space-y-2">
+          <p>Chi-Square Value: <span id="chiSquareValue"></span></p>
+          <p>Degrees of Freedom: <span id="degreesOfFreedom"></span></p>
+          <p>Critical Value (0.05): <span id="criticalValue05"></span></p>
+          <p>Critical Value (0.01): <span id="criticalValue01"></span></p>
+          <p class="flex items-center">
+            Significant at 0.05: 
+            <span id="sig05" class="ml-2"></span>
+            <span id="sig05Interpretation" class="ml-2 text-gray-600"></span>
+          </p>
+          <p class="flex items-center">
+            Significant at 0.01:
+            <span id="sig01" class="ml-2"></span>
+            <span id="sig01Interpretation" class="ml-2 text-gray-600"></span>
+          </p>
+        </div>
+        <div class="mt-4">
+          <h4 class="font-medium mb-2">Detailed Results</h4>
+          <div id="detailedResults"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const criticalValues = {
+      1: { 0.05: 3.841, 0.01: 6.635 },
+      2: { 0.05: 5.991, 0.01: 9.210 },
+      3: { 0.05: 7.815, 0.01: 11.345 },
+      4: { 0.05: 9.488, 0.01: 13.277 },
+      5: { 0.05: 11.070, 0.01: 15.086 },
+      6: { 0.05: 12.592, 0.01: 16.812 },
+      7: { 0.05: 14.067, 0.01: 18.475 },
+      8: { 0.05: 15.507, 0.01: 20.090 },
+      9: { 0.05: 16.919, 0.01: 21.666 },
+      10: { 0.05: 18.307, 0.01: 23.209 },
+      12: { 0.05: 21.026, 0.01: 26.217 },
+      15: { 0.05: 25.000, 0.01: 30.578 },
+      20: { 0.05: 31.410, 0.01: 37.566 }
+    };
+
+    let activeTab = 'goodness';
+
+    document.getElementById('goodnessTab').addEventListener('click', () => switchTab('goodness'));
+    document.getElementById('independenceTab').addEventListener('click', () => switchTab('independence'));
+    document.getElementById('calculate').addEventListener('click', handleCalculate);
+
+    function switchTab(tab) {
+      activeTab = tab;
+      document.getElementById('goodnessContent').classList.toggle('hidden', tab !== 'goodness');
+      document.getElementById('independenceContent').classList.toggle('hidden', tab !== 'independence');
+      document.getElementById('goodnessTab').classList.toggle('border-blue-500', tab === 'goodness');
+      document.getElementById('goodnessTab').classList.toggle('text-blue-600', tab === 'goodness');
+      document.getElementById('independenceTab').classList.toggle('border-blue-500', tab === 'independence');
+      document.getElementById('independenceTab').classList.toggle('text-blue-600', tab === 'independence');
+      document.getElementById('results').classList.add('hidden');
+    }
+
+    function calculateGoodnessOfFit() {
+      const observed = document.getElementById('observed').value.split(/[\n,\s]+/).map(Number);
+      const expected = document.getElementById('expected').value.split(/[\n,\s]+/).map(Number);
+      const categories = document.getElementById('categories').value.split(/[\n,\s]+/);
+
+      if (observed.length !== expected.length) {
+        return { error: 'Number of observed and expected values must match' };
+      }
+
+      let chiSquare = 0;
+      const details = [];
+
+      for (let i = 0; i < observed.length; i++) {
+        const contribution = Math.pow(observed[i] - expected[i], 2) / expected[i];
+        chiSquare += contribution;
+        details.push({
+          category: categories[i] || `Category ${i + 1}`,
+          observed: observed[i],
+          expected: expected[i].toFixed(2),
+          contribution: contribution.toFixed(3)
+        });
+      }
+
+      const df = observed.length - 1;
+      const critical05 = criticalValues[df]?.['0.05'];
+      const critical01 = criticalValues[df]?.['0.01'];
+
+      return {
+        chiSquare: chiSquare.toFixed(3),
+        df,
+        significant05: chiSquare > critical05,
+        significant01: chiSquare > critical01,
+        critical05,
+        critical01,
+        details
+      };
+    }
+
+    function calculateIndependence() {
+      const rows = document.getElementById('contingencyTable').value.trim().split('\n');
+      const matrix = rows.map(row => row.split(/[\s,]+/).map(Number));
+      const rowLabels = document.getElementById('rowLabels').value.split('\n');
+      const colLabels = document.getElementById('colLabels').value.split('\n');
+      
+      const rowTotals = matrix.map(row => row.reduce((a, b) => a + b, 0));
+      const colTotals = matrix[0].map((_, i) => matrix.reduce((sum, row) => sum + row[i], 0));
+      const grandTotal = rowTotals.reduce((a, b) => a + b, 0);
+
+      let chiSquare = 0;
+      const details = [];
+
+      for (let i = 0; i < matrix.length; i++) {
+        for (let j = 0; j < matrix[0].length; j++) {
+          const expected = (rowTotals[i] * colTotals[j]) / grandTotal;
+          const contribution = Math.pow(matrix[i][j] - expected, 2) / expected;
+          chiSquare += contribution;
+          details.push({
+            cell: `${rowLabels[i] || `Row ${i+1}`} &times; ${colLabels[j] || `Col ${j+1}`}`,
+            observed: matrix[i][j],
+            expected: expected.toFixed(2),
+            contribution: contribution.toFixed(3)
+          });
+        }
+      }
+
+      const df = (matrix.length - 1) * (matrix[0].length - 1);
+      const critical05 = criticalValues[df]?.['0.05'];
+      const critical01 = criticalValues[df]?.['0.01'];
+
+      return {
+        chiSquare: chiSquare.toFixed(3),
+        df,
+        significant05: chiSquare > critical05,
+        significant01: chiSquare > critical01,
+        critical05,
+        critical01,
+        details
+      };
+    }
+
+    function handleCalculate() {
+      const results = activeTab === 'goodness' ? calculateGoodnessOfFit() : calculateIndependence();
+      displayResults(results);
+    }
+
+    function displayResults(results) {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.classList.remove('hidden');
+
+      if (results.error) {
+        resultsDiv.innerHTML = `
+          <div class="p-4 bg-red-100 text-red-700 rounded">
+            ${results.error}
+          </div>
+        `;
+        return;
+      }
+
+      const interpretation05 = activeTab === 'independence' 
+        ? (results.significant05 ? 'Yes - these variables are related (one influences the other)' : 'No - these variables appear to be independent')
+        : (results.significant05 ? 'Yes - your data differs from expected values' : 'No - your data matches expected values');
+
+      const interpretation01 = activeTab === 'independence'
+        ? (results.significant01 ? 'Yes - strong evidence these variables are related' : 'No - no strong evidence of relationship')
+        : (results.significant01 ? 'Yes - strong evidence of difference from expected' : 'No - no strong evidence of difference');
+
+      resultsDiv.innerHTML = `
+        <h3 class="font-medium mb-4">Results</h3>
+        <div class="space-y-2">
+          <p>Chi-Square Value: ${results.chiSquare}</p>
+          <p>Degrees of Freedom: ${results.df}</p>
+          <p>Critical Value (0.05): ${results.critical05?.toFixed(3)}</p>
+          <p>Critical Value (0.01): ${results.critical01?.toFixed(3)}</p>
+          <p class="flex items-center gap-2">
+            <span>Significant at 0.05:</span>
+            <span class="${results.significant05 ? 'text-green-600' : 'text-red-600'}">${interpretation05}</span>
+          </p>
+          <p class="flex items-center gap-2">
+            <span>Significant at 0.01:</span>
+            <span class="${results.significant01 ? 'text-green-600' : 'text-red-600'}">${interpretation01}</span>
+          </p>
+        </div>
+
+        <div class="mt-4">
+          <h4 class="font-medium mb-2">Detailed Results</h4>
+          <div class="overflow-x-auto">
+            <table class="min-w-full border">
+              <thead>
+                <tr class="bg-gray-100">
+                  <th class="border p-2">${activeTab === 'goodness' ? 'Category' : 'Cell'}</th>
+                  <th class="border p-2">Observed</th>
+                  <th class="border p-2">Expected</th>
+                  <th class="border p-2">Contribution</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${results.details.map(detail => `
+                  <tr>
+                    <td class="border p-2">${detail.category || detail.cell}</td>
+                    <td class="border p-2">${detail.observed}</td>
+                    <td class="border p-2">${detail.expected}</td>
+                    <td class="border p-2">${detail.contribution}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+      
+      // Add interpretations
+      const sig05Interpretation = document.getElementById('sig05Interpretation');
+      const sig01Interpretation = document.getElementById('sig01Interpretation');
+      
+      if (activeTab === 'goodness') {
+        sig05Interpretation.textContent = results.significant05 
+          ? '(Your data differs significantly from expected values)'
+          : '(Your data matches the expected distribution well)';
+        sig01Interpretation.textContent = results.significant01
+          ? '(Strong evidence your data differs from expected values)'
+          : '(No strong evidence of difference from expected values)';
+      } else {
+        sig05Interpretation.textContent = results.significant05
+          ? '(These variables are related - one influences the other)'
+          : '(These variables appear to be independent)';
+        sig01Interpretation.textContent = results.significant01
+          ? '(Strong evidence these variables are related)'
+          : '(No strong evidence of relationship between variables)';
+      }
+
+      if (results.error) {
+        resultsDiv.innerHTML = `
+          <div class="p-4 bg-red-100 text-red-700 rounded flex items-center">
+            ${results.error}
+          </div>
+        `;
+        return;
+      }
+
+      resultsDiv.innerHTML = `
+        <h3 class="font-medium mb-4">Results</h3>
+        <div class="space-y-2">
+          <p>Chi-Square Value: ${results.chiSquare}</p>
+          <p>Degrees of Freedom: ${results.df}</p>
+          <p>Critical Value (0.05): ${results.critical05?.toFixed(3)}</p>
+          <p>Critical Value (0.01): ${results.critical01?.toFixed(3)}</p>
+          <p class="flex items-center">
+            Significant at 0.05:
+            <span class="ml-2 ${results.significant05 ? 'text-green-600' : 'text-red-600'}">
+              ${results.significant05 ? 'Yes' : 'No'}
+            </span>
+          </p>
+          <p class="flex items-center">
+            Significant at 0.01:
+            <span class="ml-2 ${results.significant01 ? 'text-green-600' : 'text-red-600'}">
+              ${results.significant01 ? 'Yes' : 'No'}
+            </span>
+          </p>
+        </div>
+
+        <div class="mt-4">
+          <h4 class="font-medium mb-2">Detailed Results</h4>
+          <div class="overflow-x-auto">
+            <table class="min-w-full border">
+              <thead>
+                <tr class="bg-gray-100">
+                  <th class="border p-2">${activeTab === 'goodness' ? 'Category' : 'Cell'}</th>
+                  <th class="border p-2">Observed</th>
+                  <th class="border p-2">Expected</th>
+                  <th class="border p-2">Contribution</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${results.details.map(detail => `
+                  <tr>
+                    <td class="border p-2">${detail.category || detail.cell}</td>
+                    <td class="border p-2">${detail.observed}</td>
+                    <td class="border p-2">${detail.expected}</td>
+                    <td class="border p-2">${detail.contribution}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+  </script>
+
+  <div class="max-w-7xl mx-auto p-4 mb-8">
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-xl font-bold mb-4">Using the Chi-Square Calculator</h2>
+      
+      <div class="space-y-4">
+        <div>
+          <h3 class="font-medium">Goodness of Fit Test</h3>
+          <ul class="list-disc pl-6">
+            <li>Use when comparing one variable against expected values
+              <ul class="list-disc pl-6 text-gray-600">
+                <li>Example: Does local age distribution match census?</li>
+                <li>Example: Do survey responses follow expected proportions?</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="font-medium">Independence Test</h3>
+          <ul class="list-disc pl-6">
+            <li>Use when testing relationship between two variables
+              <ul class="list-disc pl-6 text-gray-600">
+                <li>Example: Does education level affect employment status?</li>
+                <li>Example: Is gender independent of voting preference?</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="font-medium">Interpreting Results</h3>
+          <ul class="list-disc pl-6">
+            <li>If significant (p < 0.05 or p < 0.01):
+              <ul class="list-disc pl-6 text-gray-600">
+                <li>Goodness of Fit: Your data differs significantly from expected distribution</li>
+                <li>Independence Test: The variables are significantly related - one variable influences or predicts the other</li>
+              </ul>
+            </li>
+            <li>If NOT significant:
+              <ul class="list-disc pl-6 text-gray-600">
+                <li>Goodness of Fit: Your data matches expected distribution</li>
+                <li>Independence Test: The variables are independent - no evidence that one influences the other</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <div class="bg-blue-50 p-4 rounded">
+          <h3 class="font-medium">Requirements for Valid Results</h3>
+          <ul class="list-disc pl-6">
+            <li>Expected frequencies >= 5 in each cell</li>
+            <li>Independent observations</li>
+            <li>Mutually exclusive categories</li>
+            <li>Raw counts (not percentages)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
