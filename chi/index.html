@@ -178,10 +178,15 @@ E   S   U
       // Calculate p-value
       const pValue = 1 - jStat.chisquare.cdf(chiSquare, df);
 
+      // Calculate Cramér's V (effect size for goodness of fit)
+      const N = observed.reduce((a, b) => a + b, 0);
+      const cramersV = Math.sqrt(chiSquare / N);
+
       return {
         chiSquare: chiSquare.toFixed(3),
         df,
         pValue: pValue.toFixed(4),
+        cramersV: cramersV.toFixed(3),
         significant05: chiSquare > critical05,
         significant01: chiSquare > critical01,
         critical05: critical05.toFixed(3),
@@ -224,10 +229,17 @@ E   S   U
       // Calculate p-value
       const pValue = 1 - jStat.chisquare.cdf(chiSquare, df);
 
+      // Calculate Cramér's V (effect size for contingency table)
+      const r = matrix.length;        // number of rows
+      const c = matrix[0].length;     // number of columns
+      const minDim = Math.min(r, c) - 1;
+      const cramersV = Math.sqrt(chiSquare / (grandTotal * minDim));
+
       return {
         chiSquare: chiSquare.toFixed(3),
         df,
         pValue: pValue.toFixed(4),
+        cramersV: cramersV.toFixed(3),
         significant05: chiSquare > critical05,
         significant01: chiSquare > critical01,
         critical05: critical05.toFixed(3),
@@ -268,6 +280,15 @@ E   S   U
           <p>Chi-Square Value: ${results.chiSquare}</p>
           <p>Degrees of Freedom: ${results.df}</p>
           <p><strong>p-value: ${results.pValue}</strong> ${results.pValue < 0.001 ? '(p < 0.001)' : ''}</p>
+          <div class="p-3 bg-blue-50 rounded border border-blue-200 mt-2">
+            <p class="font-medium text-blue-900">Cramér's V (Effect Size): ${results.cramersV}</p>
+            <p class="text-sm text-gray-600 mt-1">
+              ${parseFloat(results.cramersV) < 0.1 ? 'Small effect' :
+                parseFloat(results.cramersV) < 0.3 ? 'Medium effect' :
+                parseFloat(results.cramersV) < 0.5 ? 'Large effect' : 'Very large effect'}
+            </p>
+            <p class="text-xs text-gray-500 mt-1">Measures the strength of association (0 = no association, 1 = perfect association)</p>
+          </div>
           <p>Critical Value (α=0.05): ${results.critical05}</p>
           <p>Critical Value (α=0.01): ${results.critical01}</p>
           <p class="flex items-center gap-2">

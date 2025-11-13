@@ -8,7 +8,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
+
     <style>
         body { 
             margin: 0;
@@ -137,7 +138,7 @@
                 // Apply continuity correction
                 const continuityCorrection = 0.5;
                 const zScore = (U - mean + continuityCorrection) / stdDev;
-                
+
                 // Critical values for different confidence levels
                 const criticalValues = {
                     99: 2.576,
@@ -145,10 +146,15 @@
                     90: 1.645,
                     80: 1.28
                 };
-                
+
+                // Calculate p-value (two-tailed test)
+                // Using standard normal distribution CDF
+                const pValue = 2 * (1 - jStat.normal.cdf(Math.abs(zScore), 0, 1));
+
                 return {
                     U,
                     zScore: Math.abs(zScore),
+                    pValue,
                     significant: Math.abs(zScore) > criticalValues[confidenceLevel],
                     medianA: calculateMedian(dataA),
                     medianB: calculateMedian(dataB),
@@ -275,17 +281,23 @@
                                             <p className="text-sm text-gray-600">Z-Score</p>
                                             <p className="text-lg font-medium">{result.zScore.toFixed(2)}</p>
                                         </div>
+                                        <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                                            <p className="text-sm text-gray-600">p-value</p>
+                                            <p className="text-lg font-medium text-blue-700">
+                                                {result.pValue < 0.001 ? '< 0.001' : result.pValue.toFixed(4)}
+                                            </p>
+                                        </div>
                                     </div>
                                     <div className="bg-white p-3 rounded">
                                         <p className="font-medium">
-                                            Result: 
+                                            Result:
                                             <span className={`ml-2 px-2 py-1 rounded ${
-                                                result.significant 
-                                                    ? 'bg-green-100 text-green-800' 
+                                                result.significant
+                                                    ? 'bg-green-100 text-green-800'
                                                     : 'bg-yellow-100 text-yellow-800'
                                             }`}>
-                                                {result.significant 
-                                                    ? 'Significant Difference' 
+                                                {result.significant
+                                                    ? 'Significant Difference'
                                                     : 'No Significant Difference'}
                                             </span>
                                         </p>

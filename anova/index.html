@@ -91,6 +91,8 @@
                     const criticalF = getFCriticalValue(significance, dfb, dfw);
                     // Calculate p-value
                     const pValue = 1 - jStat.centralF.cdf(fStat, dfb, dfw);
+                    // Calculate Eta-squared (effect size): proportion of variance explained
+                    const etaSquared = ssb / (ssb + ssw);
 
                     setResults({
                         groupMeans,
@@ -104,6 +106,7 @@
                         fStat,
                         criticalF,
                         pValue,
+                        etaSquared,
                         significant: fStat > criticalF
                     });
                     setError('');
@@ -261,27 +264,35 @@
                     const pB = 1 - jStat.centralF.cdf(fB, dfB, dfError);
                     const pAB = 1 - jStat.centralF.cdf(fAB, dfAB, dfError);
 
+                    // Calculate partial Eta-squared (effect sizes)
+                    const etaSquaredA = ssA / (ssA + ssError);
+                    const etaSquaredB = ssB / (ssB + ssError);
+                    const etaSquaredAB = ssAB / (ssAB + ssError);
+
                     setResultsTwoWay({
                         factorA: {
                             df: dfA,
                             ss: ssA,
                             ms: msA,
                             f: fA,
-                            p: pA
+                            p: pA,
+                            etaSquared: etaSquaredA
                         },
                         factorB: {
                             df: dfB,
                             ss: ssB,
                             ms: msB,
                             f: fB,
-                            p: pB
+                            p: pB,
+                            etaSquared: etaSquaredB
                         },
                         interaction: {
                             df: dfAB,
                             ss: ssAB,
                             ms: msAB,
                             f: fAB,
-                            p: pAB
+                            p: pAB,
+                            etaSquared: etaSquaredAB
                         },
                         error: {
                             df: dfError,
@@ -448,17 +459,28 @@
                                             <h3 className="font-medium mb-2">Statistical Decision</h3>
                                             <p>{"F-statistic: " + results.fStat.toFixed(2) + " (Critical F: " + results.criticalF.toFixed(2) + ")"}</p>
                                             <p><strong>{"p-value: " + (results.pValue < 0.001 ? "< 0.001" : results.pValue.toFixed(4))}</strong></p>
+                                            <div className="mt-3 p-3 bg-blue-50 rounded border border-blue-200">
+                                                <p className="font-medium text-blue-900">{"η² (Eta-squared): " + results.etaSquared.toFixed(3)}</p>
+                                                <p className="text-sm text-gray-600 mt-1">
+                                                    {"Effect Size: " + (results.etaSquared < 0.01 ? "Small" :
+                                                     results.etaSquared < 0.06 ? "Small" :
+                                                     results.etaSquared < 0.14 ? "Medium" : "Large")}
+                                                </p>
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    {(results.etaSquared * 100).toFixed(1) + "% of variance explained by groups"}
+                                                </p>
+                                            </div>
                                             <p className="mt-2">
                                                 {results.significant ? (
                                                     <span className="text-green-600 font-medium">
-                                                        {"The differences between groups are statistically significant (F(" + 
-                                                        results.dfb + ", " + results.dfw + ") = " + 
+                                                        {"The differences between groups are statistically significant (F(" +
+                                                        results.dfb + ", " + results.dfw + ") = " +
                                                         results.fStat.toFixed(2) + ", p &lt; " + significance + ")."}
                                                     </span>
                                                 ) : (
                                                     <span className="text-yellow-600 font-medium">
-                                                        {"The differences between groups are not statistically significant (F(" + 
-                                                        results.dfb + ", " + results.dfw + ") = " + 
+                                                        {"The differences between groups are not statistically significant (F(" +
+                                                        results.dfb + ", " + results.dfw + ") = " +
                                                         results.fStat.toFixed(2) + ", p &gt; " + significance + ")."}
                                                     </span>
                                                 )}
@@ -671,6 +693,7 @@
                                                             <th className="border p-2">MS</th>
                                                             <th className="border p-2">F</th>
                                                             <th className="border p-2">p-value</th>
+                                                            <th className="border p-2">η² (partial)</th>
                                                             <th className="border p-2">Significant</th>
                                                         </tr>
                                                     </thead>
@@ -682,6 +705,9 @@
                                                             <td className="border p-2">{resultsTwoWay.factorA.ms.toFixed(2)}</td>
                                                             <td className="border p-2">{resultsTwoWay.factorA.f.toFixed(2)}</td>
                                                             <td className="border p-2">{resultsTwoWay.factorA.p.toFixed(3)}</td>
+                                                            <td className="border p-2 bg-blue-50">
+                                                                <span className="font-medium text-blue-700">{resultsTwoWay.factorA.etaSquared.toFixed(3)}</span>
+                                                            </td>
                                                             <td className="border p-2">
                                                                 <span className={resultsTwoWay.factorA.p < significance ? "text-green-600" : "text-yellow-600"}>
                                                                     {resultsTwoWay.factorA.p < significance ? "Yes" : "No"}
@@ -695,6 +721,9 @@
                                                             <td className="border p-2">{resultsTwoWay.factorB.ms.toFixed(2)}</td>
                                                             <td className="border p-2">{resultsTwoWay.factorB.f.toFixed(2)}</td>
                                                             <td className="border p-2">{resultsTwoWay.factorB.p.toFixed(3)}</td>
+                                                            <td className="border p-2 bg-blue-50">
+                                                                <span className="font-medium text-blue-700">{resultsTwoWay.factorB.etaSquared.toFixed(3)}</span>
+                                                            </td>
                                                             <td className="border p-2">
                                                                 <span className={resultsTwoWay.factorB.p < significance ? "text-green-600" : "text-yellow-600"}>
                                                                     {resultsTwoWay.factorB.p < significance ? "Yes" : "No"}
@@ -708,6 +737,9 @@
                                                             <td className="border p-2">{resultsTwoWay.interaction.ms.toFixed(2)}</td>
                                                             <td className="border p-2">{resultsTwoWay.interaction.f.toFixed(2)}</td>
                                                             <td className="border p-2">{resultsTwoWay.interaction.p.toFixed(3)}</td>
+                                                            <td className="border p-2 bg-blue-50">
+                                                                <span className="font-medium text-blue-700">{resultsTwoWay.interaction.etaSquared.toFixed(3)}</span>
+                                                            </td>
                                                             <td className="border p-2">
                                                                 <span className={resultsTwoWay.interaction.p < significance ? "text-green-600" : "text-yellow-600"}>
                                                                     {resultsTwoWay.interaction.p < significance ? "Yes" : "No"}

@@ -35,19 +35,29 @@
             const mean = parsedData.reduce((a, b) => a + b, 0) / parsedData.length;
             const squaredDiffs = parsedData.map(d => Math.pow(d - mean, 2));
             const variance = squaredDiffs.reduce((a, b) => a + b, 0) / (parsedData.length - 1);
-            const stdError = Math.sqrt(variance / parsedData.length);
+            const sd = Math.sqrt(variance);
+            const stdError = sd / Math.sqrt(parsedData.length);
             const tStat = (mean - populationMean) / stdError;
             const df = parsedData.length - 1;
             // Two-tailed test at alpha = 0.05
             const tCritical = jStat.studentt.inv(0.975, df); // 0.975 = 1 - 0.05/2
             // Calculate p-value (two-tailed)
             const pValue = 2 * (1 - jStat.studentt.cdf(Math.abs(tStat), df));
+            // Calculate Cohen's d (effect size)
+            const cohensD = (mean - populationMean) / sd;
+            // Calculate 95% confidence interval
+            const marginOfError = tCritical * stdError;
+            const ciLower = mean - marginOfError;
+            const ciUpper = mean + marginOfError;
             return {
                 mean: mean.toFixed(2),
                 tStat: tStat.toFixed(3),
                 df: df,
                 tCritical: tCritical.toFixed(3),
                 pValue: pValue.toFixed(4),
+                cohensD: cohensD.toFixed(3),
+                ciLower: ciLower.toFixed(2),
+                ciUpper: ciUpper.toFixed(2),
                 significant: Math.abs(tStat) > tCritical
             };
         };
@@ -59,6 +69,7 @@
             const meanDiff = differences.reduce((a, b) => a + b, 0) / differences.length;
             const squaredDiffs = differences.map(d => Math.pow(d - meanDiff, 2));
             const variance = squaredDiffs.reduce((a, b) => a + b, 0) / (differences.length - 1);
+            const sd = Math.sqrt(variance);
             const stdError = Math.sqrt(variance / differences.length);
             const tStat = meanDiff / stdError;
             const df = differences.length - 1;
@@ -66,11 +77,21 @@
             const tCritical = jStat.studentt.inv(0.975, df);
             // Calculate p-value (two-tailed)
             const pValue = 2 * (1 - jStat.studentt.cdf(Math.abs(tStat), df));
+            // Calculate Cohen's d for paired samples (effect size)
+            // For paired samples, Cohen's d = mean difference / SD of differences
+            const cohensD = meanDiff / sd;
+            // Calculate 95% confidence interval for the mean difference
+            const marginOfError = tCritical * stdError;
+            const ciLower = meanDiff - marginOfError;
+            const ciUpper = meanDiff + marginOfError;
             return {
                 meanDiff: meanDiff.toFixed(2),
                 tStat: tStat.toFixed(3),
                 tCritical: tCritical.toFixed(3),
                 pValue: pValue.toFixed(4),
+                cohensD: cohensD.toFixed(3),
+                ciLower: ciLower.toFixed(2),
+                ciUpper: ciUpper.toFixed(2),
                 significant: Math.abs(tStat) > tCritical,
                 df: df
             };
@@ -89,8 +110,10 @@
             const pooledVariance = ((parsedData1.length - 1) * variance1 + (parsedData2.length - 1) * variance2) /
                                 (parsedData1.length + parsedData2.length - 2);
 
-            const tStat = (mean1 - mean2) /
-                        Math.sqrt(pooledVariance * (1 / parsedData1.length + 1 / parsedData2.length));
+            const pooledSD = Math.sqrt(pooledVariance);
+            const stdError = Math.sqrt(pooledVariance * (1 / parsedData1.length + 1 / parsedData2.length));
+
+            const tStat = (mean1 - mean2) / stdError;
 
             const df = parsedData1.length + parsedData2.length - 2;
 
@@ -100,6 +123,15 @@
             // Calculate p-value (two-tailed)
             const pValue = 2 * (1 - jStat.studentt.cdf(Math.abs(tStat), df));
 
+            // Calculate Cohen's d for independent samples (effect size)
+            // Cohen's d = (mean1 - mean2) / pooled SD
+            const cohensD = (mean1 - mean2) / pooledSD;
+
+            // Calculate 95% confidence interval for the difference in means
+            const marginOfError = tCritical * stdError;
+            const ciLower = (mean1 - mean2) - marginOfError;
+            const ciUpper = (mean1 - mean2) + marginOfError;
+
             return {
                 mean1: mean1.toFixed(2),
                 mean2: mean2.toFixed(2),
@@ -108,6 +140,9 @@
                 df: df,
                 tCritical: tCritical.toFixed(3),
                 pValue: pValue.toFixed(4),
+                cohensD: cohensD.toFixed(3),
+                ciLower: ciLower.toFixed(2),
+                ciUpper: ciUpper.toFixed(2),
                 significant: Math.abs(tStat) > tCritical
             };
         };
@@ -377,6 +412,24 @@
                                         results.significant ? 'text-green-600' : 'text-red-600'
                                     }`}>
                                         {results.significant ? 'Yes' : 'No'}
+                                    </div>
+                                </div>
+                                <div className="p-4 bg-blue-50 rounded border border-blue-200">
+                                    <div className="text-sm text-gray-600">Cohen's d (Effect Size)</div>
+                                    <div className="text-xl font-medium text-blue-700">{results.cohensD}</div>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                        {Math.abs(parseFloat(results.cohensD)) < 0.2 ? 'Small' :
+                                         Math.abs(parseFloat(results.cohensD)) < 0.5 ? 'Small' :
+                                         Math.abs(parseFloat(results.cohensD)) < 0.8 ? 'Medium' : 'Large'}
+                                    </div>
+                                </div>
+                                <div className="p-4 bg-purple-50 rounded border border-purple-200 col-span-2">
+                                    <div className="text-sm text-gray-600">95% Confidence Interval</div>
+                                    <div className="text-xl font-medium text-purple-700">
+                                        [{results.ciLower}, {results.ciUpper}]
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                        {testType === 'one-sample' ? 'CI for the mean' : 'CI for the difference'}
                                     </div>
                                 </div>
                             </div>
