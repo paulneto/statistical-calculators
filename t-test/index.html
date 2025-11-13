@@ -321,6 +321,10 @@
                                     <div className="text-xl font-medium">{results.df}</div>
                                 </div>
                                 <div className="p-4 bg-gray-50 rounded">
+                                    <div className="text-sm text-gray-600">t-Critical (α=0.05)</div>
+                                    <div className="text-xl font-medium">{results.tCritical}</div>
+                                </div>
+                                <div className="p-4 bg-gray-50 rounded">
                                     <div className="text-sm text-gray-600">Significant at p&lt;0.05</div>
                                     <div className={`text-xl font-medium ${
                                         results.significant ? 'text-green-600' : 'text-red-600'
