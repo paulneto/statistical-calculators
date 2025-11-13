@@ -89,6 +89,8 @@
                     const msw = ssw / dfw;
                     const fStat = msb / msw;
                     const criticalF = getFCriticalValue(significance, dfb, dfw);
+                    // Calculate p-value
+                    const pValue = 1 - jStat.centralF.cdf(fStat, dfb, dfw);
 
                     setResults({
                         groupMeans,
@@ -101,6 +103,7 @@
                         msw,
                         fStat,
                         criticalF,
+                        pValue,
                         significant: fStat > criticalF
                     });
                     setError('');
@@ -444,6 +447,7 @@
                                         <div className="p-4 bg-gray-50 rounded">
                                             <h3 className="font-medium mb-2">Statistical Decision</h3>
                                             <p>{"F-statistic: " + results.fStat.toFixed(2) + " (Critical F: " + results.criticalF.toFixed(2) + ")"}</p>
+                                            <p><strong>{"p-value: " + (results.pValue < 0.001 ? "< 0.001" : results.pValue.toFixed(4))}</strong></p>
                                             <p className="mt-2">
                                                 {results.significant ? (
                                                     <span className="text-green-600 font-medium">

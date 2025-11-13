@@ -40,11 +40,14 @@
             const df = parsedData.length - 1;
             // Two-tailed test at alpha = 0.05
             const tCritical = jStat.studentt.inv(0.975, df); // 0.975 = 1 - 0.05/2
+            // Calculate p-value (two-tailed)
+            const pValue = 2 * (1 - jStat.studentt.cdf(Math.abs(tStat), df));
             return {
                 mean: mean.toFixed(2),
                 tStat: tStat.toFixed(3),
                 df: df,
                 tCritical: tCritical.toFixed(3),
+                pValue: pValue.toFixed(4),
                 significant: Math.abs(tStat) > tCritical
             };
         };
@@ -61,10 +64,13 @@
             const df = differences.length - 1;
             // Two-tailed test at alpha = 0.05
             const tCritical = jStat.studentt.inv(0.975, df);
+            // Calculate p-value (two-tailed)
+            const pValue = 2 * (1 - jStat.studentt.cdf(Math.abs(tStat), df));
             return {
                 meanDiff: meanDiff.toFixed(2),
                 tStat: tStat.toFixed(3),
                 tCritical: tCritical.toFixed(3),
+                pValue: pValue.toFixed(4),
                 significant: Math.abs(tStat) > tCritical,
                 df: df
             };
@@ -91,6 +97,9 @@
             // Two-tailed test at alpha = 0.05
             const tCritical = jStat.studentt.inv(0.975, df);
 
+            // Calculate p-value (two-tailed)
+            const pValue = 2 * (1 - jStat.studentt.cdf(Math.abs(tStat), df));
+
             return {
                 mean1: mean1.toFixed(2),
                 mean2: mean2.toFixed(2),
@@ -98,6 +107,7 @@
                 tStat: Math.abs(tStat).toFixed(3),
                 df: df,
                 tCritical: tCritical.toFixed(3),
+                pValue: pValue.toFixed(4),
                 significant: Math.abs(tStat) > tCritical
             };
         };
@@ -356,6 +366,10 @@
                                 <div className="p-4 bg-gray-50 rounded">
                                     <div className="text-sm text-gray-600">t-Critical (α=0.05)</div>
                                     <div className="text-xl font-medium">{results.tCritical}</div>
+                                </div>
+                                <div className="p-4 bg-gray-50 rounded">
+                                    <div className="text-sm text-gray-600">p-value</div>
+                                    <div className="text-xl font-medium">{results.pValue < 0.001 ? '< 0.001' : results.pValue}</div>
                                 </div>
                                 <div className="p-4 bg-gray-50 rounded">
                                     <div className="text-sm text-gray-600">Significant at p&lt;0.05</div>

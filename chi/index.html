@@ -3,6 +3,7 @@
 <head>
   <title>Chi-Square Calculator</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
 </head>
 <body class="bg-gray-100">
   <div class="max-w-7xl mx-auto p-4">
@@ -171,16 +172,20 @@ E   S   U
       }
 
       const df = observed.length - 1;
-      const critical05 = criticalValues[df]?.['0.05'];
-      const critical01 = criticalValues[df]?.['0.01'];
+      // Use jStat for critical values (works for any df)
+      const critical05 = jStat.chisquare.inv(0.95, df);
+      const critical01 = jStat.chisquare.inv(0.99, df);
+      // Calculate p-value
+      const pValue = 1 - jStat.chisquare.cdf(chiSquare, df);
 
       return {
         chiSquare: chiSquare.toFixed(3),
         df,
+        pValue: pValue.toFixed(4),
         significant05: chiSquare > critical05,
         significant01: chiSquare > critical01,
-        critical05,
-        critical01,
+        critical05: critical05.toFixed(3),
+        critical01: critical01.toFixed(3),
         details
       };
     }
@@ -213,16 +218,20 @@ E   S   U
       }
 
       const df = (matrix.length - 1) * (matrix[0].length - 1);
-      const critical05 = criticalValues[df]?.['0.05'];
-      const critical01 = criticalValues[df]?.['0.01'];
+      // Use jStat for critical values (works for any df)
+      const critical05 = jStat.chisquare.inv(0.95, df);
+      const critical01 = jStat.chisquare.inv(0.99, df);
+      // Calculate p-value
+      const pValue = 1 - jStat.chisquare.cdf(chiSquare, df);
 
       return {
         chiSquare: chiSquare.toFixed(3),
         df,
+        pValue: pValue.toFixed(4),
         significant05: chiSquare > critical05,
         significant01: chiSquare > critical01,
-        critical05,
-        critical01,
+        critical05: critical05.toFixed(3),
+        critical01: critical01.toFixed(3),
         details
       };
     }
@@ -258,10 +267,11 @@ E   S   U
         <div class="space-y-2">
           <p>Chi-Square Value: ${results.chiSquare}</p>
           <p>Degrees of Freedom: ${results.df}</p>
-          <p>Critical Value (0.05): ${results.critical05?.toFixed(3)}</p>
-          <p>Critical Value (0.01): ${results.critical01?.toFixed(3)}</p>
+          <p><strong>p-value: ${results.pValue}</strong> ${results.pValue < 0.001 ? '(p < 0.001)' : ''}</p>
+          <p>Critical Value (α=0.05): ${results.critical05}</p>
+          <p>Critical Value (α=0.01): ${results.critical01}</p>
           <p class="flex items-center gap-2">
-            <span>Significant at 0.05:</span>
+            <span>Significant at α=0.05:</span>
             <span class="${results.significant05 ? 'text-green-600' : 'text-red-600'}">${interpretation05}</span>
           </p>
           <p class="flex items-center gap-2">
