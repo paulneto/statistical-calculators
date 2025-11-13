@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Bayesian Theory Demo for Marketing Research</title>
+    
+    <!-- React and ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+    <!-- Recharts -->
+    <script src="https://unpkg.com/recharts@2.8.0/esm/index.js" type="module"></script>
+
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- jStat for statistical distributions -->
+    <script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .chart-container {
+            width: 100%;
+            height: 300px;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #d3d3d3;
+            outline: none;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        
+        input[type="range"]:hover {
+            opacity: 1;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #2563eb;
+            cursor: pointer;
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #2563eb;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useCallback } = React;
+        
+        // Simple chart component since we can't easily import Recharts
+        const SimpleLineChart = ({ data, lines }) => {
+            if (!data || data.length === 0) return null;
+            
+            const width = 600;
+            const height = 200;
+            const padding = { left: 50, right: 20, top: 20, bottom: 40 };
+            
+            const xMax = Math.max(...data.map(d => d.sample || d.x || 0));
+            const yMax = Math.max(...data.map(d => Math.max(...lines.map(line => d[line.key] || 0))));
+            const yMin = Math.min(...data.map(d => Math.min(...lines.map(line => d[line.key] || 0))));
+            
+            const scaleX = (x) => padding.left + ((x / xMax) * (width - padding.left - padding.right));
+            const scaleY = (y) => height - padding.bottom - (((y - yMin) / (yMax - yMin)) * (height - padding.top - padding.bottom));
+            
+            return (
+                <div className="w-full bg-white border rounded-lg p-4">
+                    <svg width={width} height={height} className="mx-auto">
+                        {/* Grid lines */}
+                        <defs>
+                            <pattern id="grid" width="40" height="20" patternUnits="userSpaceOnUse">
+                                <path d="M 40 0 L 0 0 0 20" fill="none" stroke="#f0f0f0" strokeWidth="1"/>
+                            </pattern>
+                        </defs>
+                        <rect width="100%" height="100%" fill="url(#grid)" />
+                        
+                        {/* Axes */}
+                        <line x1={padding.left} y1={height - padding.bottom} 
+                              x2={width - padding.right} y2={height - padding.bottom} 
+                              stroke="#333" strokeWidth="2"/>
+                        <line x1={padding.left} y1={padding.top} 
+                              x2={padding.left} y2={height - padding.bottom} 
+                              stroke="#333" strokeWidth="2"/>
+                        
+                        {/* Y-axis labels */}
+                        {[0, 0.25, 0.5, 0.75, 1].map(tick => {
+                            const yPos = scaleY(tick * yMax);
+                            return (
+                                <g key={tick}>
+                                    <line x1={padding.left - 5} y1={yPos} x2={padding.left} y2={yPos} stroke="#333"/>
+                                    <text x={padding.left - 10} y={yPos + 3} textAnchor="end" fontSize="10" fill="#666">
+                                        {(tick * yMax * 100).toFixed(0)}%
+                                    </text>
+                                </g>
+                            );
+                        })}
+                        
+                        {/* Lines */}
+                        {lines.map((line, lineIndex) => {
+                            const points = data.map(d => `${scaleX(d.sample || d.x || 0)},${scaleY(d[line.key] || 0)}`).join(' ');
+                            return (
+                                <polyline 
+                                    key={lineIndex}
+                                    fill="none" 
+                                    stroke={line.color} 
+                                    strokeWidth={line.width || 2}
+                                    strokeDasharray={line.dash || 'none'}
+                                    points={points}
+                                />
+                            );
+                        })}
+                        
+                        {/* Legend */}
+                        {lines.map((line, index) => (
+                            <g key={index}>
+                                <line x1={width - 150} y1={30 + index * 20} 
+                                      x2={width - 130} y2={30 + index * 20} 
+                                      stroke={line.color} strokeWidth={line.width || 2}
+                                      strokeDasharray={line.dash || 'none'}/>
+                                <text x={width - 125} y={34 + index * 20} fontSize="12" fill="#333">
+                                    {line.name}
+                                </text>
+                            </g>
+                        ))}
+                    </svg>
+                </div>
+            );
+        };
+        
+        const BayesianDemo = () => {
+            const [activeTab, setActiveTab] = useState('basics');
+            
+            return (
+                <div className="max-w-6xl mx-auto p-6 bg-gray-50 min-h-screen">
+                    <h1 className="text-3xl font-bold text-center mb-8 text-blue-700">
+                        Interactive Bayesian Theory Demo for Marketing Research
+                    </h1>
+                    
+                    <div className="mb-6">
+                        <div className="flex flex-wrap justify-center gap-2">
+                            {[
+                                { id: 'basics', label: 'Bayesian Basics' },
+                                { id: 'email', label: 'Email Campaign' },
+                                { id: 'abtest', label: 'A/B Testing' },
+                                { id: 'clv', label: 'Customer Value' },
+                                { id: 'realtime', label: 'Real-time Updates' }
+                            ].map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                                        activeTab === tab.id 
+                                            ? 'bg-blue-600 text-white' 
+                                            : 'bg-white text-blue-600 hover:bg-blue-50'
+                                    }`}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="fade-in">
+                        {activeTab === 'basics' && <BasicBayesianDemo />}
+                        {activeTab === 'email' && <EmailCampaignDemo />}
+                        {activeTab === 'abtest' && <ABTestDemo />}
+                        {activeTab === 'clv' && <CustomerValueDemo />}
+                        {activeTab === 'realtime' && <RealTimeDemo />}
+                    </div>
+                </div>
+            );
+        };
+
+        const BasicBayesianDemo = () => {
+            const [priorSuccess, setPriorSuccess] = useState(0.3);
+            const [observedSuccess, setObservedSuccess] = useState(25);
+            const [sampleSize, setSampleSize] = useState(100);
+            
+            // Simple Bayesian updating using Beta-Binomial conjugate prior
+            const alpha_prior = priorSuccess * 10;
+            const beta_prior = (1 - priorSuccess) * 10;
+            const alpha_posterior = alpha_prior + observedSuccess;
+            const beta_posterior = beta_prior + (sampleSize - observedSuccess);
+            const posteriorMean = alpha_posterior / (alpha_posterior + beta_posterior);
+
+            const likelihood = observedSuccess / sampleSize;
+
+            // Calculate 95% credible interval for the posterior
+            const credibleInterval = {
+                lower: jStat.beta.inv(0.025, alpha_posterior, beta_posterior),
+                upper: jStat.beta.inv(0.975, alpha_posterior, beta_posterior)
+            };
+            
+            return (
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                    <h2 className="text-2xl font-bold mb-4 text-gray-800">Bayesian Basics: Package Design Test</h2>
+                    <p className="text-gray-600 mb-6">
+                        You're testing a new package design. Adjust the parameters below to see how Bayesian updating works.
+                    </p>
+                    
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Prior Belief (Probability of Success): {(priorSuccess * 100).toFixed(0)}%
+                                </label>
+                                <input
+                                    type="range"
+                                    min="0.05"
+                                    max="0.95"
+                                    step="0.05"
+                                    value={priorSuccess}
+                                    onChange={(e) => setPriorSuccess(parseFloat(e.target.value))}
+                                    className="w-full"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Based on past package redesigns, what do you think the success rate will be?
+                                </p>
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Observed Successes: {observedSuccess}
+                                </label>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max={sampleSize}
+                                    step="1"
+                                    value={observedSuccess}
+                                    onChange={(e) => setObservedSuccess(parseInt(e.target.value))}
+                                    className="w-full"
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Sample Size: {sampleSize}
+                                </label>
+                                <input
+                                    type="range"
+                                    min="10"
+                                    max="500"
+                                    step="10"
+                                    value={sampleSize}
+                                    onChange={(e) => setSampleSize(parseInt(e.target.value))}
+                                    className="w-full"
+                                />
+                            </div>
+                        </div>
+                        
+                        <div className="space-y-4">
+                            <div className="bg-blue-50 p-4 rounded-lg">
+                                <h3 className="font-bold text-blue-800 mb-2">Results</h3>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between">
+                                        <span>Prior Belief:</span>
+                                        <span className="font-bold">{(priorSuccess * 100).toFixed(1)}%</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Observed Rate:</span>
+                                        <span className="font-bold">{(likelihood * 100).toFixed(1)}%</span>
+                                    </div>
+                                    <div className="flex justify-between border-t pt-2">
+                                        <span>Updated Belief (Posterior):</span>
+                                        <span className="font-bold text-blue-600">{(posteriorMean * 100).toFixed(1)}%</span>
+                                    </div>
+                                    <div className="text-xs text-blue-700 mt-2">
+                                        <div className="font-medium">95% Credible Interval:</div>
+                                        <div className="font-mono">[{(credibleInterval.lower * 100).toFixed(1)}%, {(credibleInterval.upper * 100).toFixed(1)}%]</div>
+                                        <div className="text-xs text-blue-600 mt-1">
+                                            We're 95% confident the true rate is in this range
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-green-50 p-4 rounded-lg">
+                                <h3 className="font-bold text-green-800 mb-2">Interpretation</h3>
+                                <p className="text-sm text-green-700">
+                                    {posteriorMean > priorSuccess 
+                                        ? `The data suggests the package design is more successful than initially expected. Your belief increased by ${((posteriorMean - priorSuccess) * 100).toFixed(1)} percentage points.`
+                                        : posteriorMean < priorSuccess 
+                                        ? `The data suggests the package design is less successful than expected. Your belief decreased by ${((priorSuccess - posteriorMean) * 100).toFixed(1)} percentage points.`
+                                        : "The data confirms your initial belief about the package design's success rate."
+                                    }
+                                </p>
+                            </div>
+                            
+                            <div className="bg-yellow-50 p-4 rounded-lg">
+                                <h3 className="font-bold text-yellow-800 mb-2">Key Insight</h3>
+                                <p className="text-sm text-yellow-700">
+                                    Notice how the posterior is a compromise between your prior belief and the observed data. 
+                                    With more data (larger sample size), the observed rate has more influence on your final belief.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                        <h3 className="font-bold mb-2">The Math Behind It</h3>
+                        <div className="text-sm space-y-1 font-mono">
+                            <p><strong>Prior:</strong> Beta({alpha_prior.toFixed(1)}, {beta_prior.toFixed(1)}) → P(Success) = {(priorSuccess * 100).toFixed(1)}%</p>
+                            <p><strong>Likelihood:</strong> Binomial({sampleSize}, {observedSuccess}) → Observed rate = {(likelihood * 100).toFixed(1)}%</p>
+                            <p><strong>Posterior:</strong> Beta({alpha_posterior.toFixed(1)}, {beta_posterior.toFixed(1)}) → Updated belief = {(posteriorMean * 100).toFixed(1)}%</p>
+                            <p className="text-gray-600 font-sans">The posterior combines your prior knowledge with the evidence from the data.</p>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                        <h3 className="font-bold mb-2 text-purple-900">📚 What are Conjugate Priors?</h3>
+                        <div className="text-sm text-purple-800 space-y-2">
+                            <p>
+                                We use <strong>Beta-Binomial conjugacy</strong> here, which means:
+                            </p>
+                            <ul className="list-disc ml-6 space-y-1">
+                                <li><strong>Prior:</strong> Beta distribution (describes beliefs about success probability)</li>
+                                <li><strong>Likelihood:</strong> Binomial distribution (describes observed successes)</li>
+                                <li><strong>Posterior:</strong> Also Beta distribution (mathematically convenient!)</li>
+                            </ul>
+                            <p className="mt-2">
+                                This is called a <em>conjugate prior</em> because the posterior has the same form as the prior.
+                                It makes Bayesian updating simple: just add the observed successes to α and failures to β!
+                            </p>
+                            <div className="bg-white p-2 rounded mt-2 font-mono text-xs">
+                                <strong>Update rule:</strong><br/>
+                                α_posterior = α_prior + successes<br/>
+                                β_posterior = β_prior + failures
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const EmailCampaignDemo = () => {
+            const [campaigns, setCampaigns] = useState([
+                { name: 'Campaign 1', sent: 1000, opened: 250, prior: 0.2 },
+                { name: 'Campaign 2', sent: 500, opened: 150, prior: 0.25 },
+                { name: 'Campaign 3', sent: 2000, opened: 600, prior: 0.22 }
+            ]);
+            
+            const calculatePosterior = (prior, opened, sent) => {
+                // Using Beta-Binomial conjugate prior
+                const alpha_prior = prior * 20;
+                const beta_prior = (1 - prior) * 20;
+                const alpha_post = alpha_prior + opened;
+                const beta_post = beta_prior + (sent - opened);
+                return alpha_post / (alpha_post + beta_post);
+            };
+            
+            const updateCampaign = (index, field, value) => {
+                const newCampaigns = [...campaigns];
+                newCampaigns[index][field] = parseFloat(value);
+                setCampaigns(newCampaigns);
+            };
+            
+            return (
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                    <h2 className="text-2xl font-bold mb-4 text-gray-800">Email Campaign Performance Analysis</h2>
+                    <p className="text-gray-600 mb-6">
+                        Compare how Bayesian updating works across different email campaigns with varying sample sizes.
+                    </p>
+                    
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full table-auto">
+                            <thead>
+                                <tr className="bg-gray-100">
+                                    <th className="px-4 py-2 text-left">Campaign</th>
+                                    <th className="px-4 py-2 text-left">Prior Belief</th>
+                                    <th className="px-4 py-2 text-left">Emails Sent</th>
+                                    <th className="px-4 py-2 text-left">Emails Opened</th>
+                                    <th className="px-4 py-2 text-left">Observed Rate</th>
+                                    <th className="px-4 py-2 text-left">Updated Belief</th>
+                                    <th className="px-4 py-2 text-left">Change</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {campaigns.map((campaign, index) => {
+                                    const observedRate = campaign.opened / campaign.sent;
+                                    const posterior = calculatePosterior(campaign.prior, campaign.opened, campaign.sent);
+                                    const change = posterior - campaign.prior;
+                                    
+                                    return (
+                                        <tr key={index} className="border-b">
+                                            <td className="px-4 py-2 font-medium">{campaign.name}</td>
+                                            <td className="px-4 py-2">
+                                                <input
+                                                    type="number"
+                                                    min="0.05"
+                                                    max="0.95"
+                                                    step="0.01"
+                                                    value={campaign.prior.toFixed(2)}
+                                                    onChange={(e) => updateCampaign(index, 'prior', e.target.value)}
+                                                    className="w-16 px-2 py-1 border rounded text-sm"
+                                                />
+                                            </td>
+                                            <td className="px-4 py-2">
+                                                <input
+                                                    type="number"
+                                                    min="100"
+                                                    max="5000"
+                                                    step="100"
+                                                    value={campaign.sent}
+                                                    onChange={(e) => updateCampaign(index, 'sent', e.target.value)}
+                                                    className="w-20 px-2 py-1 border rounded text-sm"
+                                                />
+                                            </td>
+                                            <td className="px-4 py-2">
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    max={campaign.sent}
+                                                    step="1"
+                                                    value={campaign.opened}
+                                                    onChange={(e) => updateCampaign(index, 'opened', e.target.value)}
+                                                    className="w-20 px-2 py-1 border rounded text-sm"
+                                                />
+                                            </td>
+                                            <td className="px-4 py-2 font-mono">{(observedRate * 100).toFixed(1)}%</td>
+                                            <td className="px-4 py-2 font-mono font-bold text-blue-600">
+                                                {(posterior * 100).toFixed(1)}%
+                                            </td>
+                                            <td className={`px-4 py-2 font-mono font-bold ${change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                                                {change > 0 ? '+' : ''}{(change * 100).toFixed(1)}%
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div className="mt-6 grid md:grid-cols-2 gap-6">
+                        <div className="bg-blue-50 p-4 rounded-lg">
+                            <h3 className="font-bold text-blue-800 mb-2">Key Observations</h3>
+                            <ul className="text-sm text-blue-700 space-y-1">
+                                <li>• Campaigns with larger sample sizes see bigger belief updates</li>
+                                <li>• Prior beliefs matter more when you have less data</li>
+                                <li>• Bayesian updating gives you a principled way to combine past experience with new evidence</li>
+                            </ul>
+                        </div>
+                        
+                        <div className="bg-green-50 p-4 rounded-lg">
+                            <h3 className="font-bold text-green-800 mb-2">Business Applications</h3>
+                            <ul className="text-sm text-green-700 space-y-1">
+                                <li>• Optimize send times based on updated open rate beliefs</li>
+                                <li>• Allocate budget to campaigns with highest expected performance</li>
+                                <li>• Make decisions even with small sample sizes early in campaigns</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const ABTestDemo = () => {
+            const [versionA, setVersionA] = useState({ visitors: 1000, conversions: 120 });
+            const [versionB, setVersionB] = useState({ visitors: 1000, conversions: 140 });
+            const [prior, setPrior] = useState(0.1);
+            
+            const calculatePosterior = (prior, conversions, visitors) => {
+                const alpha_prior = prior * 20;
+                const beta_prior = (1 - prior) * 20;
+                const alpha_post = alpha_prior + conversions;
+                const beta_post = beta_prior + (visitors - conversions);
+                return alpha_post / (alpha_post + beta_post);
+            };
+            
+            const posteriorA = calculatePosterior(prior, versionA.conversions, versionA.visitors);
+            const posteriorB = calculatePosterior(prior, versionB.conversions, versionB.visitors);
+
+            // Beta distribution parameters for both versions
+            const alpha_prior = prior * 20;
+            const beta_prior = (1 - prior) * 20;
+            const alphaA = alpha_prior + versionA.conversions;
+            const betaA = beta_prior + (versionA.visitors - versionA.conversions);
+            const alphaB = alpha_prior + versionB.conversions;
+            const betaB = beta_prior + (versionB.visitors - versionB.conversions);
+
+            // Proper calculation of P(B > A) using Monte Carlo sampling from Beta distributions
+            const calculateProbBBetter = () => {
+                const numSamples = 10000;
+                let countBBetter = 0;
+                for (let i = 0; i < numSamples; i++) {
+                    const sampleA = jStat.beta.sample(alphaA, betaA);
+                    const sampleB = jStat.beta.sample(alphaB, betaB);
+                    if (sampleB > sampleA) countBBetter++;
+                }
+                return countBBetter / numSamples;
+            };
+
+            const probBBetter = calculateProbBBetter();
+
+            // Calculate 95% credible intervals for both versions
+            const credibleIntervalA = {
+                lower: jStat.beta.inv(0.025, alphaA, betaA),
+                upper: jStat.beta.inv(0.975, alphaA, betaA)
+            };
+            const credibleIntervalB = {
+                lower: jStat.beta.inv(0.025, alphaB, betaB),
+                upper: jStat.beta.inv(0.975, alphaB, betaB)
+            };
+            
+            return (
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                    <h2 className="text-2xl font-bold mb-4 text-gray-800">Bayesian A/B Testing</h2>
+                    <p className="text-gray-600 mb-6">
+                        Compare two website versions and see the probability that one outperforms the other.
+                    </p>
+                    
+                    <div className="grid md:grid-cols-3 gap-6">
+                        <div className="space-y-4">
+                            <h3 className="font-bold text-gray-700">Test Parameters</h3>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Prior Conversion Rate: {(prior * 100).toFixed(1)}%
+                                </label>
+                                <input
+                                    type="range"
+                                    min="0.05"
+                                    max="0.3"
+                                    step="0.01"
+                                    value={prior}
+                                    onChange={(e) => setPrior(parseFloat(e.target.value))}
+                                    className="w-full"
+                                />
+                            </div>
+                            
+                            <div className="border-t pt-4">
+                                <h4 className="font-medium text-blue-600 mb-2">Version A (Control)</h4>
+                                <div className="space-y-2">
+                                    <div>
+                                        <label className="text-xs text-gray-600">Visitors: {versionA.visitors}</label>
+                                        <input
+                                            type="range"
+                                            min="100"
+                                            max="5000"
+                                            step="100"
+                                            value={versionA.visitors}
+                                            onChange={(e) => setVersionA({...versionA, visitors: parseInt(e.target.value)})}
+                                            className="w-full"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-gray-600">Conversions: {versionA.conversions}</label>
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max={versionA.visitors}
+                                            step="1"
+                                            value={versionA.conversions}
+                                            onChange={(e) => setVersionA({...versionA, conversions: parseInt(e.target.value)})}
+                                            className="w-full"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="border-t pt-4">
+                                <h4 className="font-medium text-orange-600 mb-2">Version B (Test)</h4>
+                                <div className="space-y-2">
+                                    <div>
+                                        <label className="text-xs text-gray-600">Visitors: {versionB.visitors}</label>
+                                        <input
+                                            type="range"
+                                            min="100"
+                                            max="5000"
+                                            step="100"
+                                            value={versionB.visitors}
+                                            onChange={(e) => setVersionB({...versionB, visitors: parseInt(e.target.value)})}
+                                            className="w-full"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-gray-600">Conversions: {versionB.conversions}</label>
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max={versionB.visitors}
+                                            step="1"
+                                            value={versionB.conversions}
+                                            onChange={(e) => setVersionB({...versionB, conversions: parseInt(e.target.value)})}
+                                            className="w-full"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="space-y-4">
+                            <h3 className="font-bold text-gray-700">Results</h3>
+                            
+                            <div className="bg-blue-50 p-4 rounded-lg">
+                                <h4 className="font-medium text-blue-800 mb-2">Version A (Control)</h4>
+                                <div className="space-y-1 text-sm">
+                                    <div className="flex justify-between">
+                                        <span>Observed Rate:</span>
+                                        <span>{((versionA.conversions / versionA.visitors) * 100).toFixed(2)}%</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Updated Belief:</span>
+                                        <span className="font-bold">{(posteriorA * 100).toFixed(2)}%</span>
+                                    </div>
+                                    <div className="flex justify-between border-t pt-1 mt-1">
+                                        <span>95% Credible Interval:</span>
+                                        <span className="font-mono text-xs">
+                                            [{(credibleIntervalA.lower * 100).toFixed(1)}%, {(credibleIntervalA.upper * 100).toFixed(1)}%]
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-orange-50 p-4 rounded-lg">
+                                <h4 className="font-medium text-orange-800 mb-2">Version B (Test)</h4>
+                                <div className="space-y-1 text-sm">
+                                    <div className="flex justify-between">
+                                        <span>Observed Rate:</span>
+                                        <span>{((versionB.conversions / versionB.visitors) * 100).toFixed(2)}%</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Updated Belief:</span>
+                                        <span className="font-bold">{(posteriorB * 100).toFixed(2)}%</span>
+                                    </div>
+                                    <div className="flex justify-between border-t pt-1 mt-1">
+                                        <span>95% Credible Interval:</span>
+                                        <span className="font-mono text-xs">
+                                            [{(credibleIntervalB.lower * 100).toFixed(1)}%, {(credibleIntervalB.upper * 100).toFixed(1)}%]
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="space-y-4">
+                            <h3 className="font-bold text-gray-700">Decision Support</h3>
+                            
+                            <div className="bg-green-50 p-4 rounded-lg">
+                                <h4 className="font-medium text-green-800 mb-2">Probability Analysis</h4>
+                                <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between">
+                                        <span>P(B > A):</span>
+                                        <span className="font-bold text-lg">{(probBBetter * 100).toFixed(1)}%</span>
+                                    </div>
+                                    <div className="text-xs text-green-700">
+                                        {probBBetter > 0.95 ? "Strong evidence B is better" :
+                                         probBBetter > 0.8 ? "Good evidence B is better" :
+                                         probBBetter > 0.6 ? "Weak evidence B is better" :
+                                         probBBetter > 0.4 ? "Inconclusive evidence" :
+                                         "Evidence suggests A is better"}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-purple-50 p-4 rounded-lg">
+                                <h4 className="font-medium text-purple-800 mb-2">Expected Improvement</h4>
+                                <div className="text-sm">
+                                    <div className="flex justify-between">
+                                        <span>Difference:</span>
+                                        <span className="font-bold">{((posteriorB - posteriorA) * 100).toFixed(2)}%</span>
+                                    </div>
+                                    <div className="text-xs text-purple-700 mt-1">
+                                        Expected lift from B vs A
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-yellow-50 p-4 rounded-lg">
+                                <h4 className="font-medium text-yellow-800 mb-2">Business Recommendation</h4>
+                                <div className="text-xs text-yellow-700">
+                                    {probBBetter > 0.9 ? "Deploy Version B" :
+                                     probBBetter > 0.7 ? "Consider deploying B, but get more data if possible" :
+                                     probBBetter > 0.3 ? "Continue testing - need more data" :
+                                     "Stick with Version A"}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                        <h3 className="font-bold mb-2">Why Bayesian A/B Testing?</h3>
+                        <div className="grid md:grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <h4 className="font-medium text-gray-700 mb-1">Traditional (Frequentist) Approach:</h4>
+                                <ul className="text-gray-600 space-y-1">
+                                    <li>• Fixed sample size determined upfront</li>
+                                    <li>• Binary outcome: significant or not</li>
+                                    <li>• Ignores prior knowledge</li>
+                                    <li>• Difficult to interpret business impact</li>
+                                    <li>• Confidence intervals ≠ probability statements</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 className="font-medium text-gray-700 mb-1">Bayesian Approach:</h4>
+                                <ul className="text-gray-600 space-y-1">
+                                    <li>• Can stop early when you have enough evidence</li>
+                                    <li>• Gives probability that one version is better</li>
+                                    <li>• Incorporates prior knowledge</li>
+                                    <li>• Direct business interpretation</li>
+                                    <li>• Credible intervals ARE probability statements</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                        <h3 className="font-bold mb-2 text-indigo-900">🎓 Credible Intervals vs. Confidence Intervals</h3>
+                        <div className="text-sm text-indigo-800 space-y-2">
+                            <div>
+                                <strong>Bayesian Credible Interval (what we show above):</strong>
+                                <p className="text-xs mt-1">
+                                    "There is a 95% probability that the true conversion rate lies in [{(credibleIntervalB.lower * 100).toFixed(1)}%, {(credibleIntervalB.upper * 100).toFixed(1)}%]"
+                                </p>
+                                <p className="text-xs text-indigo-600 italic mt-1">
+                                    ✓ This is what most people THINK confidence intervals mean!
+                                </p>
+                            </div>
+                            <div className="mt-2">
+                                <strong>Frequentist Confidence Interval:</strong>
+                                <p className="text-xs mt-1">
+                                    "If we repeated this experiment many times, 95% of the intervals would contain the true value"
+                                </p>
+                                <p className="text-xs text-indigo-600 italic mt-1">
+                                    ✗ Does NOT say anything about THIS specific interval!
+                                </p>
+                            </div>
+                            <p className="text-xs mt-2 font-medium">
+                                Bayesian credible intervals are easier to interpret and more aligned with business decision-making.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const CustomerValueDemo = () => {
+            const [newCustomer, setNewCustomer] = useState({
+                age: 35,
+                income: 50000,
+                firstPurchase: 150,
+                daysActive: 30
+            });
+
+            // NOTE: This is a SIMPLIFIED demonstration inspired by Bayesian thinking,
+            // not a full Bayesian hierarchical model. True Bayesian CLV would use
+            // more sophisticated priors and proper probabilistic updating.
+            const calculateCustomerValue = (customer) => {
+                // Prior belief about customer lifetime value based on demographics
+                let priorCLV = 1000; // base expectation
+                
+                // Age factor
+                if (customer.age < 25) priorCLV *= 0.8;
+                else if (customer.age > 45) priorCLV *= 1.2;
+                
+                // Income factor
+                priorCLV *= (customer.income / 50000);
+                
+                // Update based on behavioral data
+                const purchaseFactor = customer.firstPurchase / 100; // normalized around $100
+                const activityFactor = Math.min(customer.daysActive / 30, 2); // capped at 2x
+                
+                // Bayesian-like updating (simplified)
+                const likelihood = purchaseFactor * activityFactor;
+                const posterior = (priorCLV * 0.6) + (likelihood * 500 * 0.4); // weighted combination
+                
+                return {
+                    prior: priorCLV,
+                    likelihood: likelihood,
+                    posterior: Math.max(posterior, 0),
+                    confidence: Math.min(customer.daysActive / 90, 1) // confidence increases with more data
+                };
+            };
+            
+            const result = calculateCustomerValue(newCustomer);
+            
+            // Simulate different customer types for comparison
+            const customerTypes = [
+                { type: "Young Professional", age: 28, income: 65000, firstPurchase: 120, daysActive: 45 },
+                { type: "Middle-aged Family", age: 42, income: 80000, firstPurchase: 200, daysActive: 60 },
+                { type: "Senior Couple", age: 58, income: 70000, firstPurchase: 300, daysActive: 20 },
+                { type: "Student", age: 22, income: 25000, firstPurchase: 50, daysActive: 15 }
+            ];
+            
+            return (
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                    <h2 className="text-2xl font-bold mb-4 text-gray-800">Customer Lifetime Value Prediction</h2>
+                    <div className="mb-4 p-3 bg-amber-50 border border-amber-300 rounded-lg">
+                        <p className="text-sm text-amber-800">
+                            <strong>📝 Note:</strong> This is a <em>simplified</em> demonstration inspired by Bayesian thinking.
+                            A full Bayesian CLV model would use hierarchical priors and proper probabilistic updating.
+                            This demo illustrates the <strong>concept</strong> of combining prior knowledge with observed behavior.
+                        </p>
+                    </div>
+                    <p className="text-gray-600 mb-6">
+                        See how Bayesian-inspired methods combine demographic priors with behavioral data to predict customer value.
+                    </p>
+                    
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                            <h3 className="font-bold text-gray-700">Customer Profile</h3>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Age: {newCustomer.age}
+                                </label>
+                                <input
+                                    type="range"
+                                    min="18"
+                                    max="70"
+                                    step="1"
+                                    value={newCustomer.age}
+                                    onChange={(e) => setNewCustomer({...newCustomer, age: parseInt(e.target.value)})}
+                                    className="w-full"
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Annual Income: ${newCustomer.income.toLocaleString()}
+                                </label>
+                                <input
+                                    type="range"
+                                    min="20000"
+                                    max="150000"
+                                    step="5000"
+                                    value={newCustomer.income}
+                                    onChange={(e) => setNewCustomer({...newCustomer, income: parseInt(e.target.value)})}
+                                    className="w-full"
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    First Purchase Amount: ${newCustomer.firstPurchase}
+                                </label>
+                                <input
+                                    type="range"
+                                    min="10"
+                                    max="500"
+                                    step="10"
+                                    value={newCustomer.firstPurchase}
+                                    onChange={(e) => setNewCustomer({...newCustomer, firstPurchase: parseInt(e.target.value)})}
+                                    className="w-full"
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Days Since First Purchase: {newCustomer.daysActive}
+                                </label>
+                                <input
+                                    type="range"
+                                    min="1"
+                                    max="180"
+                                    step="1"
+                                    value={newCustomer.daysActive}
+                                    onChange={(e) => setNewCustomer({...newCustomer, daysActive: parseInt(e.target.value)})}
+                                    className="w-full"
+                                />
+                            </div>
+                        </div>
+                        
+                        <div className="space-y-4">
+                            <h3 className="font-bold text-gray-700">CLV Prediction</h3>
+                            
+                            <div className="bg-blue-50 p-4 rounded-lg">
+                                <h4 className="font-medium text-blue-800 mb-2">Demographic Prior</h4>
+                                <div className="text-sm">
+                                    <div className="flex justify-between">
+                                        <span>Based on age & income:</span>
+                                        <span className="font-bold">${result.prior.toFixed(0)}</span>
+                                    </div>
+                                    <div className="text-xs text-blue-600 mt-1">
+                                        What we'd expect before seeing any purchase behavior
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-green-50 p-4 rounded-lg">
+                                <h4 className="font-medium text-green-800 mb-2">Updated Prediction</h4>
+                                <div className="text-sm">
+                                    <div className="flex justify-between">
+                                        <span>Posterior CLV:</span>
+                                        <span className="font-bold text-lg">${result.posterior.toFixed(0)}</span>
+                                    </div>
+                                    <div className="flex justify-between mt-1">
+                                        <span>Confidence:</span>
+                                        <span className="font-bold">{(result.confidence * 100).toFixed(0)}%</span>
+                                    </div>
+                                    <div className="text-xs text-green-600 mt-1">
+                                        Combining demographic data with observed behavior
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-yellow-50 p-4 rounded-lg">
+                                <h4 className="font-medium text-yellow-800 mb-2">Business Actions</h4>
+                                <div className="text-xs text-yellow-700 space-y-1">
+                                    {result.posterior > 1500 ? (
+                                        <>
+                                            <div>• High-value customer: Assign to premium service</div>
+                                            <div>• Offer loyalty program immediately</div>
+                                            <div>• Increase marketing investment</div>
+                                        </>
+                                    ) : result.posterior > 800 ? (
+                                        <>
+                                            <div>• Medium-value customer: Standard nurturing</div>
+                                            <div>• Monitor for upsell opportunities</div>
+                                            <div>• Moderate marketing investment</div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div>• Lower-value customer: Cost-efficient marketing</div>
+                                            <div>• Focus on retention over acquisition</div>
+                                            <div>• Wait for more behavioral data</div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="mt-6">
+                        <h3 className="font-bold text-gray-700 mb-3">Customer Type Comparison</h3>
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full table-auto text-sm">
+                                <thead>
+                                    <tr className="bg-gray-100">
+                                        <th className="px-3 py-2 text-left">Customer Type</th>
+                                        <th className="px-3 py-2 text-left">Age</th>
+                                        <th className="px-3 py-2 text-left">Income</th>
+                                        <th className="px-3 py-2 text-left">First Purchase</th>
+                                        <th className="px-3 py-2 text-left">Days Active</th>
+                                        <th className="px-3 py-2 text-left">Predicted CLV</th>
+                                        <th className="px-3 py-2 text-left">Confidence</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {customerTypes.map((customer, index) => {
+                                        const clv = calculateCustomerValue(customer);
+                                        return (
+                                            <tr key={index} className="border-b">
+                                                <td className="px-3 py-2 font-medium">{customer.type}</td>
+                                                <td className="px-3 py-2">{customer.age}</td>
+                                                <td className="px-3 py-2">${customer.income.toLocaleString()}</td>
+                                                <td className="px-3 py-2">${customer.firstPurchase}</td>
+                                                <td className="px-3 py-2">{customer.daysActive}</td>
+                                                <td className="px-3 py-2 font-bold text-green-600">${clv.posterior.toFixed(0)}</td>
+                                                <td className="px-3 py-2">{(clv.confidence * 100).toFixed(0)}%</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                        <h3 className="font-bold mb-2">Key Benefits of Bayesian CLV Modeling</h3>
+                        <div className="grid md:grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <h4 className="font-medium text-gray-700 mb-1">Traditional Approach:</h4>
+                                <ul className="text-gray-600 space-y-1">
+                                    <li>• Waits for lots of transaction history</li>
+                                    <li>• Same model for all customer segments</li>
+                                    <li>• No uncertainty quantification</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 className="font-medium text-gray-700 mb-1">Bayesian Approach:</h4>
+                                <ul className="text-gray-600 space-y-1">
+                                    <li>• Makes predictions from day one</li>
+                                    <li>• Incorporates prior knowledge about segments</li>
+                                    <li>• Quantifies prediction confidence</li>
+                                    <li>• Updates as more data becomes available</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const RealTimeDemo = () => {
+            const [isRunning, setIsRunning] = useState(false);
+            const [dataPoints, setDataPoints] = useState([]);
+            const [currentBelief, setCurrentBelief] = useState(0.15);
+            const [priorBelief] = useState(0.15);
+            const [speed, setSpeed] = useState(1000);
+            
+            useEffect(() => {
+                let interval;
+                if (isRunning) {
+                    interval = setInterval(() => {
+                        // Simulate new data point
+                        const trueRate = 0.18; // Hidden true conversion rate
+                        const newConversion = Math.random() < trueRate ? 1 : 0;
+                        
+                        setDataPoints(prev => {
+                            const newPoint = {
+                                id: prev.length + 1,
+                                conversion: newConversion,
+                                runningTotal: prev.reduce((sum, p) => sum + p.conversion, 0) + newConversion,
+                                sampleSize: prev.length + 1
+                            };
+                            
+                            // Update belief using simple Bayesian updating
+                            const alpha_prior = priorBelief * 20;
+                            const beta_prior = (1 - priorBelief) * 20;
+                            const alpha_post = alpha_prior + newPoint.runningTotal;
+                            const beta_post = beta_prior + (newPoint.sampleSize - newPoint.runningTotal);
+                            const newBelief = alpha_post / (alpha_post + beta_post);
+                            
+                            setCurrentBelief(newBelief);
+                            
+                            return [...prev.slice(-49), { ...newPoint, belief: newBelief }]; // Keep last 50 points
+                        });
+                    }, speed);
+                }
+                
+                return () => clearInterval(interval);
+            }, [isRunning, speed, priorBelief]);
+            
+            const reset = () => {
+                setDataPoints([]);
+                setCurrentBelief(priorBelief);
+                setIsRunning(false);
+            };
+            
+            const chartData = dataPoints.map((point, index) => ({
+                sample: index + 1,
+                belief: point.belief,
+                observedRate: point.runningTotal / point.sampleSize,
+                prior: priorBelief,
+                x: index + 1
+            }));
+            
+            const lines = [
+                { key: 'belief', color: '#2563eb', width: 3, name: 'Updated Belief' },
+                { key: 'observedRate', color: '#dc2626', width: 2, dash: '5,5', name: 'Observed Rate' },
+                { key: 'prior', color: '#6b7280', width: 1, dash: '2,2', name: 'Starting Belief' }
+            ];
+            
+            return (
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                    <h2 className="text-2xl font-bold mb-4 text-gray-800">Real-Time Bayesian Updating</h2>
+                    <p className="text-gray-600 mb-6">
+                        Watch how beliefs update in real-time as new data arrives. This simulates monitoring a live marketing campaign.
+                    </p>
+                    
+                    <div className="grid md:grid-cols-3 gap-6">
+                        <div className="space-y-4">
+                            <h3 className="font-bold text-gray-700">Controls</h3>
+                            
+                            <div className="space-y-2">
+                                <button
+                                    onClick={() => setIsRunning(!isRunning)}
+                                    className={`w-full px-4 py-2 rounded-lg font-medium ${
+                                        isRunning 
+                                            ? 'bg-red-500 text-white hover:bg-red-600' 
+                                            : 'bg-green-500 text-white hover:bg-green-600'
+                                    }`}
+                                >
+                                    {isRunning ? 'Stop Simulation' : 'Start Simulation'}
+                                </button>
+                                
+                                <button
+                                    onClick={reset}
+                                    className="w-full px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 font-medium"
+                                >
+                                    Reset
+                                </button>
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Speed: {speed}ms per data point
+                                </label>
+                                <select
+                                    value={speed}
+                                    onChange={(e) => setSpeed(parseInt(e.target.value))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                >
+                                    <option value={500}>Fast (500ms)</option>
+                                    <option value={1000}>Medium (1s)</option>
+                                    <option value={2000}>Slow (2s)</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div className="space-y-4">
+                            <h3 className="font-bold text-gray-700">Current Status</h3>
+                            
+                            <div className="bg-blue-50 p-4 rounded-lg">
+                                <h4 className="font-medium text-blue-800 mb-2">Belief Evolution</h4>
+                                <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between">
+                                        <span>Starting Belief:</span>
+                                        <span className="font-bold">{(priorBelief * 100).toFixed(1)}%</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Current Belief:</span>
+                                        <span className="font-bold text-blue-600">{(currentBelief * 100).toFixed(1)}%</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Sample Size:</span>
+                                        <span className="font-bold">{dataPoints.length}</span>
+                                    </div>
+                                    {dataPoints.length > 0 && (
+                                        <div className="flex justify-between">
+                                            <span>Observed Rate:</span>
+                                            <span className="font-bold">
+                                                {((dataPoints[dataPoints.length - 1]?.runningTotal || 0) / dataPoints.length * 100).toFixed(1)}%
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            <div className="bg-green-50 p-4 rounded-lg">
+                                <h4 className="font-medium text-green-800 mb-2">Live Updates</h4>
+                                <div className="text-xs text-green-700 space-y-1">
+                                    {dataPoints.slice(-3).reverse().map((point, index) => (
+                                        <div key={point.id} className={`${index === 0 ? 'font-bold' : ''}`}>
+                                            Sample #{point.id}: {point.conversion ? 'Success ✓' : 'No conversion'} 
+                                            → Belief: {(point.belief * 100).toFixed(1)}%
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="space-y-4">
+                            <h3 className="font-bold text-gray-700">Key Insights</h3>
+                            
+                            <div className="bg-yellow-50 p-4 rounded-lg">
+                                <h4 className="font-medium text-yellow-800 mb-2">What to Watch For</h4>
+                                <ul className="text-xs text-yellow-700 space-y-1">
+                                    <li>• Early data points cause big belief changes</li>
+                                    <li>• As sample size grows, changes become smaller</li>
+                                    <li>• Belief converges toward true rate (~18%)</li>
+                                    <li>• Each new data point matters less over time</li>
+                                </ul>
+                            </div>
+                            
+                            <div className="bg-purple-50 p-4 rounded-lg">
+                                <h4 className="font-medium text-purple-800 mb-2">Business Application</h4>
+                                <div className="text-xs text-purple-700">
+                                    This shows how you can make increasingly confident decisions as campaign data accumulates, 
+                                    without waiting for predetermined sample sizes.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {chartData.length > 0 && (
+                        <div className="mt-6">
+                            <h3 className="font-bold text-gray-700 mb-3">Belief Evolution Over Time</h3>
+                            <SimpleLineChart data={chartData} lines={lines} />
+                            <div className="text-xs text-gray-600 mt-2">
+                                The blue line shows how your belief changes with each new data point. 
+                                Notice how it starts at your prior (gray line) and moves toward the observed data (red dashed line).
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // Render the main app
+        ReactDOM.render(<BayesianDemo />, document.getElementById('root'));
+    </script>
+</body>
+</html>
+                
