@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Linear Regression Calculator</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen py-12">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const RegressionCalculator = () => {
+            const [xValues, setXValues] = React.useState('10, 15, 20, 25, 30, 35, 40, 45, 50, 55');
+            const [yValues, setYValues] = React.useState('170, 180, 220, 250, 270, 305, 325, 360, 390, 400');
+            const [xLabel, setXLabel] = React.useState('Ad Spend ($K)');
+            const [yLabel, setYLabel] = React.useState('Sales Revenue ($K)');
+            const [predictX, setPredictX] = React.useState('');
+            const [results, setResults] = React.useState(null);
+            const [error, setError] = React.useState('');
+
+            const parseValues = (text) => {
+                return text
+                    .split(/[\n,]+/)
+                    .map(v => v.trim())
+                    .filter(v => v !== '' && !isNaN(v))
+                    .map(Number);
+            };
+
+            const calculateRegression = () => {
+                try {
+                    setError('');
+                    const x = parseValues(xValues);
+                    const y = parseValues(yValues);
+
+                    if (x.length !== y.length) {
+                        throw new Error('X and Y must have the same number of values');
+                    }
+
+                    if (x.length < 2) {
+                        throw new Error('Need at least 2 data points');
+                    }
+
+                    const n = x.length;
+
+                    // Calculate sums
+                    const sumX = x.reduce((a, b) => a + b, 0);
+                    const sumY = y.reduce((a, b) => a + b, 0);
+                    const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
+                    const sumXSquare = x.reduce((sum, xi) => sum + xi * xi, 0);
+                    const sumYSquare = y.reduce((sum, yi) => sum + yi * yi, 0);
+
+                    // Calculate means
+                    const meanX = sumX / n;
+                    const meanY = sumY / n;
+
+                    // Calculate slope (b1) and intercept (b0)
+                    const b1 = (n * sumXY - sumX * sumY) / (n * sumXSquare - sumX * sumX);
+                    const b0 = meanY - b1 * meanX;
+
+                    // Calculate correlation coefficient (r)
+                    const numeratorR = n * sumXY - sumX * sumY;
+                    const denominatorR = Math.sqrt((n * sumXSquare - sumX * sumX) * (n * sumYSquare - sumY * sumY));
+                    const r = numeratorR / denominatorR;
+                    const rSquared = r * r;
+
+                    // Calculate residuals and SSE
+                    const predicted = x.map(xi => b0 + b1 * xi);
+                    const residuals = y.map((yi, i) => yi - predicted[i]);
+                    const sse = residuals.reduce((sum, res) => sum + res * res, 0);
+
+                    // Calculate standard error of the estimate
+                    const see = Math.sqrt(sse / (n - 2));
+
+                    // Calculate SST and SSR
+                    const sst = y.reduce((sum, yi) => sum + Math.pow(yi - meanY, 2), 0);
+                    const ssr = sst - sse;
+
+                    // Make prediction if requested
+                    let prediction = null;
+                    if (predictX !== '') {
+                        const xPred = parseFloat(predictX);
+                        if (!isNaN(xPred)) {
+                            prediction = {
+                                x: xPred,
+                                y: b0 + b1 * xPred
+                            };
+                        }
+                    }
+
+                    setResults({
+                        b0,
+                        b1,
+                        r,
+                        rSquared,
+                        see,
+                        n,
+                        dataPoints: x.map((xi, i) => ({ x: xi, y: y[i], predicted: predicted[i], residual: residuals[i] })),
+                        prediction,
+                        sse,
+                        ssr,
+                        sst
+                    });
+
+                } catch (err) {
+                    setError(err.message);
+                    setResults(null);
+                }
+            };
+
+            React.useEffect(() => {
+                calculateRegression();
+            }, []);
+
+            const ScatterPlot = ({ dataPoints, b0, b1, prediction }) => {
+                if (!dataPoints || dataPoints.length === 0) return null;
+
+                const margin = 50;
+                const width = 600;
+                const height = 400;
+                const plotWidth = width - 2 * margin;
+                const plotHeight = height - 2 * margin;
+
+                // Get data ranges
+                const xValues = dataPoints.map(p => p.x);
+                const yValues = dataPoints.map(p => p.y);
+                const xMin = Math.min(...xValues);
+                const xMax = Math.max(...xValues);
+                const yMin = Math.min(...yValues);
+                const yMax = Math.max(...yValues);
+
+                // Add padding
+                const xRange = xMax - xMin;
+                const yRange = yMax - yMin;
+                const xPadding = xRange * 0.1;
+                const yPadding = yRange * 0.1;
+
+                const xScale = (x) => ((x - xMin + xPadding) / (xRange + 2 * xPadding)) * plotWidth + margin;
+                const yScale = (y) => height - margin - ((y - yMin + yPadding) / (yRange + 2 * yPadding)) * plotHeight;
+
+                // Regression line points
+                const lineX1 = xMin - xPadding;
+                const lineY1 = b0 + b1 * lineX1;
+                const lineX2 = xMax + xPadding;
+                const lineY2 = b0 + b1 * lineX2;
+
+                return (
+                    <svg width={width} height={height} className="bg-white border rounded">
+                        {/* Axes */}
+                        <line x1={margin} y1={height - margin} x2={width - margin} y2={height - margin} stroke="black" strokeWidth="2" />
+                        <line x1={margin} y1={margin} x2={margin} y2={height - margin} stroke="black" strokeWidth="2" />
+
+                        {/* Axis labels */}
+                        <text x={width / 2} y={height - 10} textAnchor="middle" fontSize="14">{xLabel}</text>
+                        <text x={15} y={height / 2} transform={`rotate(-90, 15, ${height / 2})`} textAnchor="middle" fontSize="14">{yLabel}</text>
+
+                        {/* Regression line */}
+                        <line
+                            x1={xScale(lineX1)}
+                            y1={yScale(lineY1)}
+                            x2={xScale(lineX2)}
+                            y2={yScale(lineY2)}
+                            stroke="#ef4444"
+                            strokeWidth="2"
+                        />
+
+                        {/* Data points */}
+                        {dataPoints.map((point, i) => (
+                            <circle
+                                key={i}
+                                cx={xScale(point.x)}
+                                cy={yScale(point.y)}
+                                r="5"
+                                fill="#3b82f6"
+                            />
+                        ))}
+
+                        {/* Prediction point if exists */}
+                        {prediction && (
+                            <circle
+                                cx={xScale(prediction.x)}
+                                cy={yScale(prediction.y)}
+                                r="6"
+                                fill="#10b981"
+                                stroke="#065f46"
+                                strokeWidth="2"
+                            />
+                        )}
+                    </svg>
+                );
+            };
+
+            return (
+                <div className="max-w-6xl mx-auto px-4">
+                    <div className="bg-white rounded-lg shadow-lg p-6">
+                        <h1 className="text-3xl font-bold mb-6">Simple Linear Regression Calculator</h1>
+
+                        {/* Input Section */}
+                        <div className="grid md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label className="block font-medium mb-2">X Variable Label</label>
+                                <input
+                                    type="text"
+                                    value={xLabel}
+                                    onChange={(e) => setXLabel(e.target.value)}
+                                    className="w-full border rounded px-3 py-2"
+                                />
+                            </div>
+                            <div>
+                                <label className="block font-medium mb-2">Y Variable Label</label>
+                                <input
+                                    type="text"
+                                    value={yLabel}
+                                    onChange={(e) => setYLabel(e.target.value)}
+                                    className="w-full border rounded px-3 py-2"
+                                />
+                            </div>
+                            <div>
+                                <label className="block font-medium mb-2">X Values (comma or line separated)</label>
+                                <textarea
+                                    value={xValues}
+                                    onChange={(e) => setXValues(e.target.value)}
+                                    className="w-full h-32 border rounded px-3 py-2 font-mono"
+                                    placeholder="10, 15, 20, 25..."
+                                />
+                            </div>
+                            <div>
+                                <label className="block font-medium mb-2">Y Values (comma or line separated)</label>
+                                <textarea
+                                    value={yValues}
+                                    onChange={(e) => setYValues(e.target.value)}
+                                    className="w-full h-32 border rounded px-3 py-2 font-mono"
+                                    placeholder="170, 180, 220, 250..."
+                                />
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={calculateRegression}
+                            className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mb-6"
+                        >
+                            Calculate Regression
+                        </button>
+
+                        {error && (
+                            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+                                {error}
+                            </div>
+                        )}
+
+                        {results && (
+                            <div className="space-y-6">
+                                {/* Regression Equation */}
+                                <div className="bg-blue-50 p-4 rounded">
+                                    <h3 className="font-bold text-lg mb-2">Regression Equation</h3>
+                                    <p className="text-xl font-mono">
+                                        ŷ = {results.b0.toFixed(2)} + {results.b1.toFixed(2)}x
+                                    </p>
+                                    <p className="mt-2 text-gray-700">
+                                        {yLabel} = {results.b0.toFixed(2)} + {results.b1.toFixed(2)} × {xLabel}
+                                    </p>
+                                </div>
+
+                                {/* Statistics */}
+                                <div className="grid md:grid-cols-3 gap-4">
+                                    <div className="bg-gray-50 p-4 rounded">
+                                        <div className="text-sm text-gray-600">Slope (b₁)</div>
+                                        <div className="text-2xl font-bold">{results.b1.toFixed(4)}</div>
+                                        <div className="text-xs text-gray-600 mt-1">Change in Y per unit of X</div>
+                                    </div>
+                                    <div className="bg-gray-50 p-4 rounded">
+                                        <div className="text-sm text-gray-600">Intercept (b₀)</div>
+                                        <div className="text-2xl font-bold">{results.b0.toFixed(4)}</div>
+                                        <div className="text-xs text-gray-600 mt-1">Y value when X = 0</div>
+                                    </div>
+                                    <div className="bg-gray-50 p-4 rounded">
+                                        <div className="text-sm text-gray-600">Correlation (r)</div>
+                                        <div className="text-2xl font-bold">{results.r.toFixed(4)}</div>
+                                        <div className="text-xs text-gray-600 mt-1">Strength of relationship</div>
+                                    </div>
+                                    <div className="bg-gray-50 p-4 rounded">
+                                        <div className="text-sm text-gray-600">R-Squared (r²)</div>
+                                        <div className="text-2xl font-bold">{results.rSquared.toFixed(4)}</div>
+                                        <div className="text-xs text-gray-600 mt-1">{(results.rSquared * 100).toFixed(1)}% of variance explained</div>
+                                    </div>
+                                    <div className="bg-gray-50 p-4 rounded">
+                                        <div className="text-sm text-gray-600">Std Error of Estimate</div>
+                                        <div className="text-2xl font-bold">{results.see.toFixed(4)}</div>
+                                        <div className="text-xs text-gray-600 mt-1">Typical prediction error</div>
+                                    </div>
+                                    <div className="bg-gray-50 p-4 rounded">
+                                        <div className="text-sm text-gray-600">Sample Size</div>
+                                        <div className="text-2xl font-bold">{results.n}</div>
+                                        <div className="text-xs text-gray-600 mt-1">Number of observations</div>
+                                    </div>
+                                </div>
+
+                                {/* Scatter Plot */}
+                                <div className="flex justify-center">
+                                    <ScatterPlot
+                                        dataPoints={results.dataPoints}
+                                        b0={results.b0}
+                                        b1={results.b1}
+                                        prediction={results.prediction}
+                                    />
+                                </div>
+
+                                {/* Prediction */}
+                                <div className="bg-green-50 p-4 rounded">
+                                    <h3 className="font-bold text-lg mb-2">Make a Prediction</h3>
+                                    <div className="flex gap-4 items-end">
+                                        <div className="flex-1">
+                                            <label className="block font-medium mb-2">Enter X value to predict Y</label>
+                                            <input
+                                                type="number"
+                                                value={predictX}
+                                                onChange={(e) => setPredictX(e.target.value)}
+                                                className="w-full border rounded px-3 py-2"
+                                                placeholder="e.g., 60"
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={calculateRegression}
+                                            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                                        >
+                                            Predict
+                                        </button>
+                                    </div>
+                                    {results.prediction && (
+                                        <div className="mt-4 p-3 bg-white rounded">
+                                            <p className="text-lg">
+                                                When {xLabel} = <strong>{results.prediction.x}</strong>
+                                            </p>
+                                            <p className="text-lg">
+                                                Predicted {yLabel} = <strong>{results.prediction.y.toFixed(2)}</strong>
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Interpretation Guide */}
+                                <div className="bg-gray-50 p-4 rounded">
+                                    <h3 className="font-bold text-lg mb-4">Interpreting Your Results</h3>
+
+                                    <div className="space-y-3">
+                                        <div>
+                                            <h4 className="font-medium text-blue-600">Slope (b₁ = {results.b1.toFixed(2)})</h4>
+                                            <p className="text-gray-700">
+                                                For each 1-unit increase in {xLabel}, {yLabel} changes by {results.b1.toFixed(2)} units on average.
+                                                {results.b1 > 0 ? ' (Positive relationship)' : ' (Negative relationship)'}
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <h4 className="font-medium text-blue-600">Intercept (b₀ = {results.b0.toFixed(2)})</h4>
+                                            <p className="text-gray-700">
+                                                When {xLabel} is 0, the predicted {yLabel} is {results.b0.toFixed(2)}.
+                                                {results.b0 < 0 && ' (Note: Negative intercept may not be practically meaningful)'}
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <h4 className="font-medium text-blue-600">R-Squared (r² = {results.rSquared.toFixed(4)})</h4>
+                                            <p className="text-gray-700">
+                                                {xLabel} explains {(results.rSquared * 100).toFixed(1)}% of the variation in {yLabel}.
+                                                {results.rSquared >= 0.7 ? ' (Strong explanatory power)' :
+                                                 results.rSquared >= 0.4 ? ' (Moderate explanatory power)' :
+                                                 ' (Weak explanatory power - other factors may be important)'}
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <h4 className="font-medium text-blue-600">Standard Error ({results.see.toFixed(2)})</h4>
+                                            <p className="text-gray-700">
+                                                On average, predictions are off by about {results.see.toFixed(2)} units.
+                                                Lower values indicate better prediction accuracy.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<RegressionCalculator />, document.getElementById('root'));
+    </script>
+</body>
+</html>

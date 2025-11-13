@@ -8,6 +8,7 @@
     <script src="https://unpkg.com/react@18.2.0/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/babel-standalone@6.26.0/babel.min.js" crossorigin></script>
+    <script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js" crossorigin></script>
 </head>
 <body class="bg-gray-50 min-h-screen py-12">
     <div id="root"></div>
@@ -50,8 +51,10 @@
                     .map(Number);
             };
 
-            const getFCriticalValue = (alpha) => {
-                return alpha === 0.05 ? 3.89 : 6.93;
+            const getFCriticalValue = (alpha, dfBetween, dfWithin) => {
+                // Use jStat to calculate F-critical value
+                // F-critical = inverse of F-distribution CDF at (1 - alpha)
+                return jStat.centralF.inv(1 - alpha, dfBetween, dfWithin);
             };
 
             const calculateAnova = () => {
@@ -85,7 +88,7 @@
                     const msb = ssb / dfb;
                     const msw = ssw / dfw;
                     const fStat = msb / msw;
-                    const criticalF = getFCriticalValue(significance);
+                    const criticalF = getFCriticalValue(significance, dfb, dfw);
 
                     setResults({
                         groupMeans,
@@ -142,29 +145,145 @@
 
             const calculateTwoWayAnova = () => {
                 try {
-                    // For demonstration, we'll create sample results
-                    // In a real implementation, this would calculate actual ANOVA statistics
+                    // Parse all cell data
+                    const cellData = {};
+                    const allValues = [];
+                    let totalN = 0;
+
+                    for (const levelA of factorALevels) {
+                        for (const levelB of factorBLevels) {
+                            const key = levelA + "-" + levelB;
+                            const values = parseDataArray(twoWayData[key] || '');
+                            if (values.length === 0) {
+                                throw new Error(`No data entered for ${levelA} - ${levelB}`);
+                            }
+                            cellData[key] = values;
+                            allValues.push(...values);
+                            totalN += values.length;
+                        }
+                    }
+
+                    // Check for balanced design (equal n in each cell)
+                    const cellSizes = Object.values(cellData).map(v => v.length);
+                    const isBalanced = cellSizes.every(n => n === cellSizes[0]);
+                    const n = cellSizes[0]; // observations per cell
+
+                    if (!isBalanced) {
+                        throw new Error('Unbalanced design detected. Please ensure equal sample sizes in each cell.');
+                    }
+
+                    // Calculate means
+                    const grandMean = allValues.reduce((a, b) => a + b, 0) / allValues.length;
+
+                    // Cell means
+                    const cellMeans = {};
+                    for (const key in cellData) {
+                        cellMeans[key] = cellData[key].reduce((a, b) => a + b, 0) / cellData[key].length;
+                    }
+
+                    // Row (Factor A) means
+                    const rowMeans = {};
+                    for (const levelA of factorALevels) {
+                        const rowValues = [];
+                        for (const levelB of factorBLevels) {
+                            rowValues.push(...cellData[levelA + "-" + levelB]);
+                        }
+                        rowMeans[levelA] = rowValues.reduce((a, b) => a + b, 0) / rowValues.length;
+                    }
+
+                    // Column (Factor B) means
+                    const colMeans = {};
+                    for (const levelB of factorBLevels) {
+                        const colValues = [];
+                        for (const levelA of factorALevels) {
+                            colValues.push(...cellData[levelA + "-" + levelB]);
+                        }
+                        colMeans[levelB] = colValues.reduce((a, b) => a + b, 0) / colValues.length;
+                    }
+
+                    // Calculate Sum of Squares
+                    const a = factorALevels.length; // levels of Factor A
+                    const b = factorBLevels.length; // levels of Factor B
+
+                    // SS Total
+                    const ssTotal = allValues.reduce((sum, val) =>
+                        sum + Math.pow(val - grandMean, 2), 0);
+
+                    // SS Factor A (between rows)
+                    const ssA = b * n * factorALevels.reduce((sum, levelA) =>
+                        sum + Math.pow(rowMeans[levelA] - grandMean, 2), 0);
+
+                    // SS Factor B (between columns)
+                    const ssB = a * n * factorBLevels.reduce((sum, levelB) =>
+                        sum + Math.pow(colMeans[levelB] - grandMean, 2), 0);
+
+                    // SS Interaction
+                    let ssAB = 0;
+                    for (const levelA of factorALevels) {
+                        for (const levelB of factorBLevels) {
+                            const cellMean = cellMeans[levelA + "-" + levelB];
+                            const rowMean = rowMeans[levelA];
+                            const colMean = colMeans[levelB];
+                            ssAB += n * Math.pow(cellMean - rowMean - colMean + grandMean, 2);
+                        }
+                    }
+
+                    // SS Error (within cells)
+                    let ssError = 0;
+                    for (const key in cellData) {
+                        const mean = cellMeans[key];
+                        ssError += cellData[key].reduce((sum, val) =>
+                            sum + Math.pow(val - mean, 2), 0);
+                    }
+
+                    // Degrees of Freedom
+                    const dfA = a - 1;
+                    const dfB = b - 1;
+                    const dfAB = (a - 1) * (b - 1);
+                    const dfError = a * b * (n - 1);
+
+                    // Mean Squares
+                    const msA = ssA / dfA;
+                    const msB = ssB / dfB;
+                    const msAB = ssAB / dfAB;
+                    const msError = ssError / dfError;
+
+                    // F-Statistics
+                    const fA = msA / msError;
+                    const fB = msB / msError;
+                    const fAB = msAB / msError;
+
+                    // P-values using jStat
+                    const pA = 1 - jStat.centralF.cdf(fA, dfA, dfError);
+                    const pB = 1 - jStat.centralF.cdf(fB, dfB, dfError);
+                    const pAB = 1 - jStat.centralF.cdf(fAB, dfAB, dfError);
+
                     setResultsTwoWay({
                         factorA: {
-                            df: factorALevels.length - 1,
-                            ss: 245.67,
-                            ms: 122.84,
-                            f: 15.23,
-                            p: 0.001
+                            df: dfA,
+                            ss: ssA,
+                            ms: msA,
+                            f: fA,
+                            p: pA
                         },
                         factorB: {
-                            df: factorBLevels.length - 1,
-                            ss: 156.78,
-                            ms: 156.78,
-                            f: 8.45,
-                            p: 0.015
+                            df: dfB,
+                            ss: ssB,
+                            ms: msB,
+                            f: fB,
+                            p: pB
                         },
                         interaction: {
-                            df: (factorALevels.length - 1) * (factorBLevels.length - 1),
-                            ss: 89.34,
-                            ms: 44.67,
-                            f: 3.67,
-                            p: 0.048
+                            df: dfAB,
+                            ss: ssAB,
+                            ms: msAB,
+                            f: fAB,
+                            p: pAB
+                        },
+                        error: {
+                            df: dfError,
+                            ss: ssError,
+                            ms: msError
                         }
                     });
                     setErrorTwoWay('');

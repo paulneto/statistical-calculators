@@ -8,6 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
     <style>
         body { 
             margin: 0;
@@ -37,11 +38,14 @@
             const stdError = Math.sqrt(variance / parsedData.length);
             const tStat = (mean - populationMean) / stdError;
             const df = parsedData.length - 1;
+            // Two-tailed test at alpha = 0.05
+            const tCritical = jStat.studentt.inv(0.975, df); // 0.975 = 1 - 0.05/2
             return {
                 mean: mean.toFixed(2),
                 tStat: tStat.toFixed(3),
                 df: df,
-                significant: Math.abs(tStat) > 2.0
+                tCritical: tCritical.toFixed(3),
+                significant: Math.abs(tStat) > tCritical
             };
         };
 
@@ -54,11 +58,15 @@
             const variance = squaredDiffs.reduce((a, b) => a + b, 0) / (differences.length - 1);
             const stdError = Math.sqrt(variance / differences.length);
             const tStat = meanDiff / stdError;
+            const df = differences.length - 1;
+            // Two-tailed test at alpha = 0.05
+            const tCritical = jStat.studentt.inv(0.975, df);
             return {
                 meanDiff: meanDiff.toFixed(2),
                 tStat: tStat.toFixed(3),
-                significant: Math.abs(tStat) > 2.0,
-                df: differences.length - 1
+                tCritical: tCritical.toFixed(3),
+                significant: Math.abs(tStat) > tCritical,
+                df: df
             };
         };
 
@@ -72,13 +80,16 @@
             const variance1 = parsedData1.reduce((a, b) => a + Math.pow(b - mean1, 2), 0) / (parsedData1.length - 1);
             const variance2 = parsedData2.reduce((a, b) => a + Math.pow(b - mean2, 2), 0) / (parsedData2.length - 1);
 
-            const pooledVariance = ((parsedData1.length - 1) * variance1 + (parsedData2.length - 1) * variance2) / 
+            const pooledVariance = ((parsedData1.length - 1) * variance1 + (parsedData2.length - 1) * variance2) /
                                 (parsedData1.length + parsedData2.length - 2);
 
-            const tStat = (mean1 - mean2) / 
+            const tStat = (mean1 - mean2) /
                         Math.sqrt(pooledVariance * (1 / parsedData1.length + 1 / parsedData2.length));
 
             const df = parsedData1.length + parsedData2.length - 2;
+
+            // Two-tailed test at alpha = 0.05
+            const tCritical = jStat.studentt.inv(0.975, df);
 
             return {
                 mean1: mean1.toFixed(2),
@@ -86,7 +97,8 @@
                 difference: (mean1 - mean2).toFixed(2),
                 tStat: Math.abs(tStat).toFixed(3),
                 df: df,
-                significant: Math.abs(tStat) > 2.0
+                tCritical: tCritical.toFixed(3),
+                significant: Math.abs(tStat) > tCritical
             };
         };
 

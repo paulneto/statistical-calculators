@@ -97,20 +97,46 @@
                 const rankSumA = combined
                     .filter(x => x.group === 'A')
                     .reduce((sum, x) => sum + x.rank, 0);
-                    
+
                 const n1 = dataA.length;
                 const n2 = dataB.length;
-                
+                const N = n1 + n2;
+
                 const U1 = rankSumA - (n1 * (n1 + 1)) / 2;
                 const U2 = n1 * n2 - U1;
-                
+
                 // Use smaller U value
                 const U = Math.min(U1, U2);
-                
-                // Calculate z-score for large samples (n > 20)
+
+                // Calculate tie correction
+                // Group tied values and calculate correction factor
+                const tieGroups = {};
+                for (const item of combined) {
+                    if (!tieGroups[item.value]) {
+                        tieGroups[item.value] = 0;
+                    }
+                    tieGroups[item.value]++;
+                }
+
+                // Calculate sum of (t^3 - t) for each tie group where t > 1
+                let tieCorrection = 0;
+                for (const value in tieGroups) {
+                    const t = tieGroups[value];
+                    if (t > 1) {
+                        tieCorrection += (Math.pow(t, 3) - t);
+                    }
+                }
+
+                // Calculate z-score with tie correction
                 const mean = (n1 * n2) / 2;
-                const stdDev = Math.sqrt((n1 * n2 * (n1 + n2 + 1)) / 12);
-                const zScore = (U - mean) / stdDev;
+
+                // Standard deviation with tie correction
+                const variance = (n1 * n2 / 12) * ((N + 1) - tieCorrection / (N * (N - 1)));
+                const stdDev = Math.sqrt(variance);
+
+                // Apply continuity correction
+                const continuityCorrection = 0.5;
+                const zScore = (U - mean + continuityCorrection) / stdDev;
                 
                 // Critical values for different confidence levels
                 const criticalValues = {
