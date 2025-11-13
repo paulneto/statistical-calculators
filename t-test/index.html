@@ -108,6 +108,18 @@
             const [populationMean, setPopulationMean] = React.useState('');
             const [sampleType, setSampleType] = React.useState(null);
 
+            // Calculate sample mean for display
+            const calculatedSampleMean = React.useMemo(() => {
+                if (testType === 'one-sample' && sampleData.group1) {
+                    const parsed = parseInputData(sampleData.group1);
+                    if (parsed.length > 0) {
+                        const mean = parsed.reduce((a, b) => a + b, 0) / parsed.length;
+                        return mean.toFixed(2);
+                    }
+                }
+                return null;
+            }, [sampleData.group1, testType]);
+
             const sampleDatasets = {
                 campaign: {
                     title: 'Email Campaign A/B Test',
@@ -267,13 +279,34 @@
                         )}
                         {testType === 'one-sample' && (
                             <div>
-                                <h3 className="font-medium mb-2">Population Mean</h3>
+                                <h3 className="font-medium mb-2">Population Mean (to test against)</h3>
                                 <input
                                     type="number"
                                     value={populationMean}
                                     onChange={(e) => setPopulationMean(e.target.value)}
                                     className="w-full border rounded p-2"
+                                    placeholder="e.g., 7.0"
                                 />
+                                {calculatedSampleMean && (
+                                    <div className="mt-3 p-3 bg-blue-50 rounded border border-blue-200">
+                                        <div className="text-sm font-medium text-blue-900 mb-1">Visual Comparison:</div>
+                                        <div className="grid grid-cols-2 gap-2 text-sm">
+                                            <div>
+                                                <span className="text-gray-600">Your Sample Mean:</span>
+                                                <span className="ml-2 font-bold text-blue-700">{calculatedSampleMean}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-600">Testing Against:</span>
+                                                <span className="ml-2 font-bold text-purple-700">{populationMean || '—'}</span>
+                                            </div>
+                                        </div>
+                                        {populationMean && (
+                                            <div className="mt-2 text-xs text-gray-600">
+                                                Difference: {Math.abs(parseFloat(calculatedSampleMean) - parseFloat(populationMean)).toFixed(2)}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
