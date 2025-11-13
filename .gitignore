@@ -39,4 +39,7 @@ Desktop.ini
 
 # Archive files (if any exist)
 */archive/
+
+# Review and testing documents (local only)
 MATHEMATICAL_REVIEW.md
+TESTING_GUIDE.md
