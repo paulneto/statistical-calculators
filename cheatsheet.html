@@ -44,6 +44,10 @@
                 <a href="#mann" style="background-color: #e0e7ff;" class="px-3 py-1 text-indigo-700 rounded-full hover:bg-indigo-200 whitespace-nowrap">Mann-Whitney</a>
                 <a href="#proportions" style="background-color: #cffafe;" class="px-3 py-1 text-cyan-700 rounded-full hover:bg-cyan-200 whitespace-nowrap">Proportions</a>
                 <a href="#bayesian" style="background-color: #ede9fe;" class="px-3 py-1 text-violet-700 rounded-full hover:bg-violet-200 whitespace-nowrap">Bayesian</a>
+                <a href="#multiple-regression" style="background-color: #e0f2fe;" class="px-3 py-1 text-sky-700 rounded-full hover:bg-sky-200 whitespace-nowrap">Multi-Reg</a>
+                <a href="#posthoc" style="background-color: #ecfccb;" class="px-3 py-1 text-lime-700 rounded-full hover:bg-lime-200 whitespace-nowrap">Post-Hoc</a>
+                <a href="#logistic" style="background-color: #fae8ff;" class="px-3 py-1 text-fuchsia-700 rounded-full hover:bg-fuchsia-200 whitespace-nowrap">Logistic</a>
+                <a href="#cluster" style="background-color: #d1fae5;" class="px-3 py-1 text-emerald-700 rounded-full hover:bg-emerald-200 whitespace-nowrap">Clustering</a>
             </div>
         </div>
     </div>
@@ -64,12 +68,14 @@
                 <h3 class="font-bold text-gray-800 mb-2">🎯 Quick Decision Tree:</h3>
                 <ul class="text-sm text-gray-700 space-y-1">
                     <li><strong>Comparing 2 groups?</strong> → T-Test</li>
-                    <li><strong>Comparing 3+ groups?</strong> → ANOVA</li>
+                    <li><strong>Comparing 3+ groups?</strong> → ANOVA (then Post-Hoc)</li>
                     <li><strong>Looking at categories?</strong> → Chi-Square</li>
-                    <li><strong>Predicting outcomes?</strong> → Regression</li>
+                    <li><strong>Predicting continuous outcome?</strong> → Multiple Regression</li>
+                    <li><strong>Predicting yes/no?</strong> → Logistic Regression</li>
                     <li><strong>Measuring relationships?</strong> → Correlation</li>
                     <li><strong>Comparing percentages?</strong> → Z-Test for Proportions</li>
                     <li><strong>Weird/skewed data?</strong> → Mann-Whitney (non-parametric)</li>
+                    <li><strong>Finding customer segments?</strong> → Cluster Analysis</li>
                 </ul>
             </div>
         </div>
@@ -804,6 +810,307 @@
                     <li>• <strong>More complex to calculate</strong> (but our calculator does it for you!)</li>
                     <li>• <strong>Not universally accepted</strong> in academic journals (yet)</li>
                     <li>• Can be <strong>computationally intensive</strong> for complex models</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- MULTIPLE REGRESSION -->
+        <div id="multiple-regression" class="test-card bg-white rounded-lg shadow-lg p-8 mb-8 border-t-4 border-sky-500">
+            <div class="emoji-header mb-4">📊</div>
+            <h2 class="text-3xl font-bold mb-4 text-sky-700">Multiple Regression</h2>
+            <p class="text-xl text-gray-600 mb-6 italic">"Predict with multiple factors, not just one"</p>
+
+            <div class="bg-sky-50 rounded-lg p-6 mb-6">
+                <h3 class="font-bold text-lg mb-3 text-sky-900">What is it?</h3>
+                <p class="text-gray-700">
+                    Multiple regression lets you predict an outcome using <strong>multiple predictor variables</strong> at once.
+                    Instead of "Does ad spend affect sales?", you can ask "Do ad spend, seasonality, AND pricing all affect sales?"
+                    It tells you each variable's unique contribution while controlling for the others.
+                </p>
+            </div>
+
+            <div class="bg-blue-50 rounded-lg p-6 mb-6">
+                <h4 class="font-bold text-blue-900 mb-3">🎬 Real Example:</h4>
+                <p class="text-gray-700 mb-2">
+                    <strong>Predicting monthly sales from:</strong>
+                </p>
+                <ul class="text-sm text-gray-700 space-y-1">
+                    <li>• Ad spend ($)</li>
+                    <li>• Season (1=peak, 0=off)</li>
+                    <li>• Price ($)</li>
+                </ul>
+                <p class="text-gray-700 mt-3">
+                    <strong>Result:</strong> Sales = 45 + 3.2×(AdSpend) + 12×(Season) - 1.5×(Price)
+                </p>
+                <p class="text-gray-700 mt-2 text-sm">
+                    Each coefficient shows the effect of that variable <em>holding others constant</em>.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6 mb-6">
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h4 class="font-bold text-gray-800 mb-3">When to use it:</h4>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li>✓ Multiple factors affect your outcome</li>
+                        <li>✓ Want to control for confounding variables</li>
+                        <li>✓ Need to know which factors matter most</li>
+                        <li>✓ Building a predictive model</li>
+                    </ul>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h4 class="font-bold text-gray-800 mb-3">Key Metrics:</h4>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li><strong>R²:</strong> % of variance explained (higher = better fit)</li>
+                        <li><strong>Coefficients:</strong> Effect of each variable</li>
+                        <li><strong>P-values:</strong> Which predictors are significant</li>
+                        <li><strong>VIF:</strong> Checks for multicollinearity (&lt;5 is good)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-yellow-50 rounded-lg p-6 mb-6">
+                <h4 class="font-bold text-yellow-900 mb-3">📖 How to Interpret:</h4>
+                <p class="text-gray-700 text-sm">
+                    "For every $1,000 increase in ad spend, sales increase by $3,200 <em>(holding season and price constant)</em>."
+                    The key is "holding others constant" — that's what makes multiple regression powerful!
+                </p>
+            </div>
+
+            <div class="bg-red-50 rounded-lg p-6">
+                <h4 class="font-bold text-red-900 mb-3">⚠️ Watch Out For:</h4>
+                <ul class="text-sm text-gray-700 space-y-1">
+                    <li>• <strong>Multicollinearity:</strong> Predictors too correlated (check VIF &gt; 10)</li>
+                    <li>• <strong>Overfitting:</strong> Too many predictors for sample size</li>
+                    <li>• <strong>Linearity:</strong> Assumes linear relationships</li>
+                    <li>• <strong>Outliers:</strong> Can heavily influence results</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- POST-HOC TESTS -->
+        <div id="posthoc" class="test-card bg-white rounded-lg shadow-lg p-8 mb-8 border-t-4 border-lime-500">
+            <div class="emoji-header mb-4">🔍</div>
+            <h2 class="text-3xl font-bold mb-4 text-lime-700">Post-Hoc Tests</h2>
+            <p class="text-xl text-gray-600 mb-6 italic">"ANOVA said they differ... but WHO differs from WHO?"</p>
+
+            <div class="bg-lime-50 rounded-lg p-6 mb-6">
+                <h3 class="font-bold text-lg mb-3 text-lime-900">What is it?</h3>
+                <p class="text-gray-700">
+                    ANOVA tells you "at least one group is different" but doesn't say <strong>which ones</strong>.
+                    Post-hoc tests (like Tukey HSD or Bonferroni) do pairwise comparisons to find out exactly which groups differ,
+                    while <strong>controlling for multiple testing errors</strong>.
+                </p>
+            </div>
+
+            <div class="bg-blue-50 rounded-lg p-6 mb-6">
+                <h4 class="font-bold text-blue-900 mb-3">🎬 Real Example:</h4>
+                <p class="text-gray-700 mb-2">
+                    <strong>Comparing email open rates for 4 subject line types:</strong>
+                </p>
+                <ul class="text-sm text-gray-700 space-y-1">
+                    <li>• Questions: 14.5%</li>
+                    <li>• Urgency: 19.2%</li>
+                    <li>• Personalized: 15.1%</li>
+                    <li>• Emoji: 17.3%</li>
+                </ul>
+                <p class="text-gray-700 mt-3">
+                    <strong>ANOVA:</strong> "At least one is different (p &lt; 0.001)"
+                </p>
+                <p class="text-gray-700 mt-2">
+                    <strong>Post-Hoc (Tukey):</strong> "Urgency significantly beats Questions and Personalized (p &lt; 0.05), but not Emoji."
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6 mb-6">
+                <div class="bg-purple-50 rounded-lg p-6">
+                    <h4 class="font-bold text-purple-800 mb-3">Tukey HSD:</h4>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li>✓ Most common choice</li>
+                        <li>✓ Controls family-wise error rate</li>
+                        <li>✓ Best for similar sample sizes</li>
+                        <li>✓ More powerful than Bonferroni</li>
+                    </ul>
+                </div>
+
+                <div class="bg-blue-50 rounded-lg p-6">
+                    <h4 class="font-bold text-blue-800 mb-3">Bonferroni:</h4>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li>✓ Very conservative (fewer false positives)</li>
+                        <li>✓ Works with unequal sample sizes</li>
+                        <li>✓ Easy to understand (divides α)</li>
+                        <li>✓ Good for few comparisons</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-yellow-50 rounded-lg p-6 mb-6">
+                <h4 class="font-bold text-yellow-900 mb-3">📖 How to Interpret:</h4>
+                <p class="text-gray-700 text-sm">
+                    "Post-hoc Tukey tests showed Urgency-based subject lines (M=19.2%) significantly outperformed
+                    Question-based (M=14.5%, p=0.003) and Personalized (M=15.1%, p=0.008) subject lines."
+                </p>
+            </div>
+
+            <div class="bg-red-50 rounded-lg p-6">
+                <h4 class="font-bold text-red-900 mb-3">⚠️ Watch Out For:</h4>
+                <ul class="text-sm text-gray-700 space-y-1">
+                    <li>• <strong>Only run AFTER significant ANOVA!</strong> Don't fish for significance</li>
+                    <li>• <strong>Too many groups:</strong> Power drops with many comparisons</li>
+                    <li>• <strong>Bonferroni too conservative:</strong> May miss real differences</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- LOGISTIC REGRESSION -->
+        <div id="logistic" class="test-card bg-white rounded-lg shadow-lg p-8 mb-8 border-t-4 border-fuchsia-500">
+            <div class="emoji-header mb-4">🎯</div>
+            <h2 class="text-3xl font-bold mb-4 text-fuchsia-700">Logistic Regression</h2>
+            <p class="text-xl text-gray-600 mb-6 italic">"Predicting yes/no outcomes (will they buy? will they click?)"</p>
+
+            <div class="bg-fuchsia-50 rounded-lg p-6 mb-6">
+                <h3 class="font-bold text-lg mb-3 text-fuchsia-900">What is it?</h3>
+                <p class="text-gray-700">
+                    Logistic regression predicts <strong>binary outcomes</strong> (yes/no, 0/1, success/failure) based on predictor variables.
+                    Unlike regular regression, it gives you a <strong>probability</strong> between 0 and 1.
+                    Perfect for "Will customer X convert?" or "Will email Y get clicked?"
+                </p>
+            </div>
+
+            <div class="bg-blue-50 rounded-lg p-6 mb-6">
+                <h4 class="font-bold text-blue-900 mb-3">🎬 Real Example:</h4>
+                <p class="text-gray-700 mb-2">
+                    <strong>Predicting customer purchase (yes/no) from:</strong>
+                </p>
+                <ul class="text-sm text-gray-700 space-y-1">
+                    <li>• Age</li>
+                    <li>• Income</li>
+                    <li>• Number of website visits</li>
+                </ul>
+                <p class="text-gray-700 mt-3">
+                    <strong>Result:</strong> "For every $10k increase in income, odds of purchase increase by 2.3x (p &lt; 0.001)"
+                </p>
+                <p class="text-gray-700 mt-2 text-sm">
+                    Model accuracy: 84%, with precision of 78% for predicting purchases.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6 mb-6">
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h4 class="font-bold text-gray-800 mb-3">When to use it:</h4>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li>✓ Outcome is binary (yes/no)</li>
+                        <li>✓ Want to predict probabilities</li>
+                        <li>✓ Multiple predictors available</li>
+                        <li>✓ Building classification models</li>
+                    </ul>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h4 class="font-bold text-gray-800 mb-3">Key Metrics:</h4>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li><strong>Odds Ratios:</strong> How much each variable changes odds</li>
+                        <li><strong>Accuracy:</strong> % correctly predicted</li>
+                        <li><strong>Precision:</strong> % of predicted Yes that are really Yes</li>
+                        <li><strong>Recall:</strong> % of actual Yes that we caught</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-yellow-50 rounded-lg p-6 mb-6">
+                <h4 class="font-bold text-yellow-900 mb-3">📖 How to Interpret:</h4>
+                <p class="text-gray-700 text-sm mb-2">
+                    <strong>Odds Ratio = 2.3 for Income:</strong> "Each $10k income increase is associated with 2.3× higher odds of purchasing."
+                </p>
+                <p class="text-gray-700 text-sm">
+                    <strong>Confusion Matrix:</strong> Shows true positives, false positives, etc. — essential for evaluating model quality.
+                </p>
+            </div>
+
+            <div class="bg-red-50 rounded-lg p-6">
+                <h4 class="font-bold text-red-900 mb-3">⚠️ Watch Out For:</h4>
+                <ul class="text-sm text-gray-700 space-y-1">
+                    <li>• <strong>Imbalanced data:</strong> If 95% are "No", model might just predict "No" always</li>
+                    <li>• <strong>Overfitting:</strong> Too many predictors for sample size</li>
+                    <li>• <strong>Multicollinearity:</strong> Correlated predictors cause problems</li>
+                    <li>• <strong>Sample size:</strong> Need enough of BOTH outcomes</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- CLUSTER ANALYSIS -->
+        <div id="cluster" class="test-card bg-white rounded-lg shadow-lg p-8 mb-8 border-t-4 border-emerald-500">
+            <div class="emoji-header mb-4">🔵</div>
+            <h2 class="text-3xl font-bold mb-4 text-emerald-700">Cluster Analysis (K-Means)</h2>
+            <p class="text-xl text-gray-600 mb-6 italic">"Finding natural groups in your customer data"</p>
+
+            <div class="bg-emerald-50 rounded-lg p-6 mb-6">
+                <h3 class="font-bold text-lg mb-3 text-emerald-900">What is it?</h3>
+                <p class="text-gray-700">
+                    Cluster analysis groups similar data points together <strong>without predefined labels</strong>.
+                    K-means is the most common method — it finds k groups by minimizing distance within clusters.
+                    Perfect for customer segmentation: "Are there natural customer types in my data?"
+                </p>
+            </div>
+
+            <div class="bg-blue-50 rounded-lg p-6 mb-6">
+                <h4 class="font-bold text-blue-900 mb-3">🎬 Real Example:</h4>
+                <p class="text-gray-700 mb-2">
+                    <strong>Clustering 500 customers based on:</strong>
+                </p>
+                <ul class="text-sm text-gray-700 space-y-1">
+                    <li>• Age</li>
+                    <li>• Income</li>
+                    <li>• Purchase frequency</li>
+                    <li>• Average order value</li>
+                </ul>
+                <p class="text-gray-700 mt-3">
+                    <strong>Found 3 segments:</strong>
+                </p>
+                <ul class="text-sm text-gray-700 space-y-1 mt-2">
+                    <li>• <strong>Cluster 1:</strong> Young, low-income, infrequent buyers (25%)</li>
+                    <li>• <strong>Cluster 2:</strong> Middle-aged, high-income, frequent buyers (35%)</li>
+                    <li>• <strong>Cluster 3:</strong> Mature, mid-income, regular buyers (40%)</li>
+                </ul>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6 mb-6">
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h4 class="font-bold text-gray-800 mb-3">When to use it:</h4>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li>✓ Customer segmentation</li>
+                        <li>✓ Market research</li>
+                        <li>✓ Finding patterns in data</li>
+                        <li>✓ Personalization strategies</li>
+                    </ul>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h4 class="font-bold text-gray-800 mb-3">Key Concepts:</h4>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li><strong>k:</strong> Number of clusters (you choose)</li>
+                        <li><strong>Centroids:</strong> Center point of each cluster</li>
+                        <li><strong>WCSS:</strong> Within-cluster sum of squares (lower = tighter)</li>
+                        <li><strong>Elbow plot:</strong> Helps choose optimal k</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-yellow-50 rounded-lg p-6 mb-6">
+                <h4 class="font-bold text-yellow-900 mb-3">📖 How to Interpret:</h4>
+                <p class="text-gray-700 text-sm">
+                    Look at cluster centroids (average values) to understand what makes each segment unique.
+                    Then target each segment differently: VIP treatment for high-value cluster, reactivation campaigns for low-engagement cluster, etc.
+                </p>
+            </div>
+
+            <div class="bg-red-50 rounded-lg p-6">
+                <h4 class="font-bold text-red-900 mb-3">⚠️ Watch Out For:</h4>
+                <ul class="text-sm text-gray-700 space-y-1">
+                    <li>• <strong>Choosing k:</strong> Use elbow plot, but it's partly subjective</li>
+                    <li>• <strong>Scale matters:</strong> Normalize variables first (age 20-80, income $20k-$200k)</li>
+                    <li>• <strong>Random initialization:</strong> Different runs can give different results</li>
+                    <li>• <strong>Assumes spherical clusters:</strong> Won't find complex shapes</li>
                 </ul>
             </div>
         </div>

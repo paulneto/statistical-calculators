@@ -575,6 +575,382 @@ else:
             </div>
         </div>
 
+        <!-- MULTIPLE REGRESSION -->
+        <div id="multiple-regression" class="bg-white rounded-lg shadow-lg p-8 mb-8 border-t-4 border-sky-500">
+            <div class="emoji-header mb-4">📊</div>
+            <h2 class="text-3xl font-bold mb-4 text-sky-700">Multiple Regression</h2>
+            <p class="text-gray-600 mb-4">Predict an outcome using multiple predictor variables at once</p>
+
+            <div class="bg-gradient-to-r from-sky-50 to-blue-50 rounded-lg p-6 mb-6">
+                <h3 class="font-bold text-gray-800 mb-2">💡 Scenario:</h3>
+                <p class="text-gray-700">Predict monthly sales from ad spend, seasonality, and price</p>
+            </div>
+
+            <button onclick="copyCode(this)" class="copy-btn">Copy</button>
+            <div class="code-block">
+                <pre><code class="language-python"># === MULTIPLE REGRESSION ===
+# Predict sales from ad_spend, season, and price
+
+import numpy as np
+import pandas as pd
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+import statsmodels.api as sm
+
+# Sample data: Monthly sales data
+data = pd.DataFrame({
+    'sales': [120, 145, 132, 158, 125, 169, 140, 175, 138, 162],
+    'ad_spend': [10, 15, 11, 18, 12, 20, 14, 22, 13, 19],  # $1000s
+    'season': [0, 1, 0, 1, 0, 1, 0, 1, 0, 1],  # 0=off, 1=peak
+    'price': [50, 48, 52, 47, 51, 46, 49, 45, 50, 47]  # in dollars
+})
+
+# Prepare predictors (X) and outcome (y)
+X = data[['ad_spend', 'season', 'price']]
+y = data['sales']
+
+# === METHOD 1: sklearn (quick) ===
+model = LinearRegression()
+model.fit(X, y)
+
+print("=== REGRESSION RESULTS ===")
+print(f"R-squared: {model.score(X, y):.3f}")
+print(f"\nCoefficients:")
+for name, coef in zip(X.columns, model.coef_):
+    print(f"  {name}: {coef:.2f}")
+print(f"  intercept: {model.intercept_:.2f}")
+
+# === METHOD 2: statsmodels (detailed stats) ===
+X_with_intercept = sm.add_constant(X)  # Add intercept
+model_sm = sm.OLS(y, X_with_intercept).fit()
+
+print("\n=== DETAILED STATISTICS ===")
+print(model_sm.summary())
+
+# === Check for multicollinearity (VIF) ===
+print("\n=== MULTICOLLINEARITY CHECK (VIF) ===")
+vif_data = pd.DataFrame()
+vif_data["Variable"] = X.columns
+vif_data["VIF"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
+print(vif_data)
+print("\n⚠ VIF > 10 indicates multicollinearity problem")
+
+# === Make predictions ===
+new_data = pd.DataFrame({
+    'ad_spend': [16],
+    'season': [1],
+    'price': [48]
+})
+prediction = model.predict(new_data)
+print(f"\nPredicted sales: ${prediction[0]:.0f}k")</code></pre>
+            </div>
+
+            <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mt-4">
+                <h4 class="font-bold text-yellow-900 mb-2">How to interpret:</h4>
+                <ul class="text-sm text-gray-700 space-y-1">
+                    <li><strong>Coefficients:</strong> Change in outcome per unit increase (holding others constant)</li>
+                    <li><strong>R²:</strong> % of variance explained (higher = better fit)</li>
+                    <li><strong>P-values:</strong> Which predictors are statistically significant</li>
+                    <li><strong>VIF < 5:</strong> Good, VIF > 10: Multicollinearity problem</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- POST-HOC TESTS -->
+        <div id="posthoc" class="bg-white rounded-lg shadow-lg p-8 mb-8 border-t-4 border-lime-500">
+            <div class="emoji-header mb-4">🔍</div>
+            <h2 class="text-3xl font-bold mb-4 text-lime-700">Post-Hoc Tests</h2>
+            <p class="text-gray-600 mb-4">Find which specific groups differ after significant ANOVA</p>
+
+            <div class="bg-gradient-to-r from-lime-50 to-green-50 rounded-lg p-6 mb-6">
+                <h3 class="font-bold text-gray-800 mb-2">💡 Scenario:</h3>
+                <p class="text-gray-700">After ANOVA shows email types differ, find which ones specifically</p>
+            </div>
+
+            <button onclick="copyCode(this)" class="copy-btn">Copy</button>
+            <div class="code-block">
+                <pre><code class="language-python"># === POST-HOC TESTS (Tukey HSD & Bonferroni) ===
+# After ANOVA, find which groups differ
+
+import numpy as np
+import pandas as pd
+from scipy import stats
+from statsmodels.stats.multicomp import pairwise_tukeyhsd, MultiComparison
+
+# Sample data: Email open rates for 4 subject line types
+questions = [12.5, 14.2, 13.8, 15.1, 14.5]  # %
+urgency = [18.3, 19.5, 18.9, 19.8, 20.2]
+personalized = [14.8, 15.5, 14.9, 15.8, 15.2]
+emoji = [16.9, 17.5, 17.2, 18.1, 16.8]
+
+# Combine into long format for post-hoc tests
+data = pd.DataFrame({
+    'open_rate': questions + urgency + personalized + emoji,
+    'subject_type': ['Questions']*5 + ['Urgency']*5 + ['Personalized']*5 + ['Emoji']*5
+})
+
+# === First, run ANOVA (prerequisite) ===
+groups = [questions, urgency, personalized, emoji]
+f_stat, p_value = stats.f_oneway(*groups)
+
+print("=== ANOVA (Prerequisite) ===")
+print(f"F-statistic: {f_stat:.3f}")
+print(f"P-value: {p_value:.4f}")
+
+if p_value < 0.05:
+    print("✓ ANOVA significant - proceed with post-hoc tests\n")
+
+    # === Tukey HSD (Honestly Significant Difference) ===
+    print("=== TUKEY HSD POST-HOC TEST ===")
+    tukey = pairwise_tukeyhsd(
+        endog=data['open_rate'],
+        groups=data['subject_type'],
+        alpha=0.05
+    )
+    print(tukey)
+
+    # === Bonferroni correction ===
+    print("\n=== BONFERRONI CORRECTION ===")
+    mc = MultiComparison(data['open_rate'], data['subject_type'])
+    bonferroni_result = mc.allpairtest(stats.ttest_ind, method='bonf')
+    print(bonferroni_result[0])
+
+else:
+    print("✗ ANOVA not significant - don't run post-hoc tests")
+
+# === Group summaries ===
+print("\n=== GROUP SUMMARIES ===")
+summary = data.groupby('subject_type')['open_rate'].agg(['mean', 'std', 'count'])
+print(summary)</code></pre>
+            </div>
+
+            <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mt-4">
+                <h4 class="font-bold text-yellow-900 mb-2">How to interpret:</h4>
+                <ul class="text-sm text-gray-700 space-y-1">
+                    <li><strong>Tukey output:</strong> "reject=True" means those groups significantly differ</li>
+                    <li><strong>Bonferroni:</strong> More conservative, divides α by number of comparisons</li>
+                    <li><strong>Only run if ANOVA is significant!</strong> (p < 0.05)</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- LOGISTIC REGRESSION -->
+        <div id="logistic" class="bg-white rounded-lg shadow-lg p-8 mb-8 border-t-4 border-fuchsia-500">
+            <div class="emoji-header mb-4">🎯</div>
+            <h2 class="text-3xl font-bold mb-4 text-fuchsia-700">Logistic Regression</h2>
+            <p class="text-gray-600 mb-4">Predict binary outcomes (yes/no, 0/1, convert/don't convert)</p>
+
+            <div class="bg-gradient-to-r from-fuchsia-50 to-pink-50 rounded-lg p-6 mb-6">
+                <h3 class="font-bold text-gray-800 mb-2">💡 Scenario:</h3>
+                <p class="text-gray-700">Predict whether a customer will purchase based on age, income, and website visits</p>
+            </div>
+
+            <button onclick="copyCode(this)" class="copy-btn">Copy</button>
+            <div class="code-block">
+                <pre><code class="language-python"># === LOGISTIC REGRESSION ===
+# Predict binary outcome (0/1, yes/no)
+
+import numpy as np
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score
+import statsmodels.api as sm
+
+# Sample data: Customer purchases
+data = pd.DataFrame({
+    'purchased': [1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1],
+    'age': [35, 28, 42, 50, 22, 38, 25, 45, 55, 30, 40, 26, 48, 24, 52],
+    'income': [65, 45, 75, 85, 35, 70, 40, 80, 95, 50, 72, 42, 88, 38, 90],  # $1000s
+    'visits': [5, 2, 8, 10, 1, 6, 3, 9, 12, 4, 7, 2, 11, 1, 10]
+})
+
+# Prepare data
+X = data[['age', 'income', 'visits']]
+y = data['purchased']
+
+# === METHOD 1: sklearn (quick predictions) ===
+model = LogisticRegression()
+model.fit(X, y)
+
+# Predictions
+y_pred = model.predict(X)
+y_prob = model.predict_proba(X)[:, 1]  # Probability of class 1
+
+print("=== LOGISTIC REGRESSION RESULTS ===")
+print(f"Coefficients:")
+for name, coef in zip(X.columns, model.coef_[0]):
+    odds_ratio = np.exp(coef)
+    print(f"  {name}: β={coef:.3f}, OR={odds_ratio:.2f}")
+
+# === Confusion Matrix ===
+print("\n=== CONFUSION MATRIX ===")
+cm = confusion_matrix(y, y_pred)
+print(cm)
+print(f"\nTrue Negatives: {cm[0,0]}, False Positives: {cm[0,1]}")
+print(f"False Negatives: {cm[1,0]}, True Positives: {cm[1,1]}")
+
+# === Classification Metrics ===
+print("\n=== CLASSIFICATION REPORT ===")
+print(classification_report(y, y_pred, target_names=['No Purchase', 'Purchase']))
+
+# Accuracy
+accuracy = (y == y_pred).mean()
+print(f"\nAccuracy: {accuracy:.2%}")
+
+# AUC-ROC
+try:
+    auc = roc_auc_score(y, y_prob)
+    print(f"AUC-ROC: {auc:.3f}")
+except:
+    print("AUC-ROC: Need more variation in data")
+
+# === METHOD 2: statsmodels (detailed stats & p-values) ===
+print("\n=== DETAILED STATISTICS ===")
+X_with_intercept = sm.add_constant(X)
+logit_model = sm.Logit(y, X_with_intercept).fit()
+print(logit_model.summary())
+
+# === Make prediction for new customer ===
+new_customer = pd.DataFrame({
+    'age': [40],
+    'income': [75],
+    'visits': [8]
+})
+prob = model.predict_proba(new_customer)[0, 1]
+print(f"\n=== PREDICTION ===")
+print(f"Probability of purchase: {prob:.1%}")</code></pre>
+            </div>
+
+            <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mt-4">
+                <h4 class="font-bold text-yellow-900 mb-2">How to interpret:</h4>
+                <ul class="text-sm text-gray-700 space-y-1">
+                    <li><strong>Odds Ratio (OR):</strong> OR=2.0 means doubling the odds per unit increase</li>
+                    <li><strong>Confusion Matrix:</strong> Shows correct/incorrect predictions</li>
+                    <li><strong>Precision:</strong> Of predicted "Yes", how many are really "Yes"</li>
+                    <li><strong>Recall:</strong> Of actual "Yes", how many did we catch</li>
+                    <li><strong>AUC-ROC:</strong> 0.5=random, 1.0=perfect</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- CLUSTER ANALYSIS -->
+        <div id="cluster" class="bg-white rounded-lg shadow-lg p-8 mb-8 border-t-4 border-emerald-500">
+            <div class="emoji-header mb-4">🔵</div>
+            <h2 class="text-3xl font-bold mb-4 text-emerald-700">Cluster Analysis (K-Means)</h2>
+            <p class="text-gray-600 mb-4">Find natural groups/segments in your data without predefined labels</p>
+
+            <div class="bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg p-6 mb-6">
+                <h3 class="font-bold text-gray-800 mb-2">💡 Scenario:</h3>
+                <p class="text-gray-700">Segment customers into groups based on age, income, and purchase behavior</p>
+            </div>
+
+            <button onclick="copyCode(this)" class="copy-btn">Copy</button>
+            <div class="code-block">
+                <pre><code class="language-python"># === K-MEANS CLUSTERING ===
+# Find natural customer segments
+
+import numpy as np
+import pandas as pd
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+
+# Sample data: Customer information
+data = pd.DataFrame({
+    'customer_id': range(1, 21),
+    'age': [25, 45, 32, 52, 28, 48, 35, 55, 22, 50, 30, 46, 27, 53, 33, 49, 24, 51, 29, 47],
+    'income': [35, 75, 42, 85, 38, 78, 45, 90, 32, 80, 40, 72, 36, 88, 44, 76, 34, 82, 39, 74],  # $1000s
+    'purchase_freq': [2, 12, 3, 15, 2, 13, 4, 18, 1, 14, 3, 11, 2, 16, 4, 12, 2, 15, 3, 13]  # per year
+})
+
+# Select features for clustering
+features = ['age', 'income', 'purchase_freq']
+X = data[features]
+
+# === IMPORTANT: Standardize features (required for K-means!) ===
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# === Find optimal number of clusters (Elbow Method) ===
+wcss = []  # Within-Cluster Sum of Squares
+K_range = range(1, 11)
+
+for k in K_range:
+    kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+    kmeans.fit(X_scaled)
+    wcss.append(kmeans.inertia_)
+
+print("=== ELBOW PLOT DATA ===")
+for k, score in zip(K_range, wcss):
+    print(f"k={k}: WCSS={score:.2f}")
+
+# Plot elbow curve (look for the "elbow")
+# plt.plot(K_range, wcss, 'bo-')
+# plt.xlabel('Number of Clusters (k)')
+# plt.ylabel('WCSS')
+# plt.title('Elbow Method')
+# plt.show()
+
+# === Run K-means with chosen k (let's say k=3) ===
+k = 3
+kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+data['cluster'] = kmeans.fit_predict(X_scaled)
+
+print(f"\n=== K-MEANS WITH k={k} ===")
+
+# === Cluster centroids (in original scale) ===
+centroids_scaled = kmeans.cluster_centers_
+centroids = scaler.inverse_transform(centroids_scaled)
+
+print("\nCluster Centroids (average values):")
+centroid_df = pd.DataFrame(centroids, columns=features)
+centroid_df.index.name = 'Cluster'
+print(centroid_df)
+
+# === Cluster sizes ===
+print("\n=== CLUSTER SIZES ===")
+cluster_counts = data['cluster'].value_counts().sort_index()
+print(cluster_counts)
+
+# === Cluster summaries ===
+print("\n=== CLUSTER SUMMARIES ===")
+for cluster_id in range(k):
+    cluster_data = data[data['cluster'] == cluster_id]
+    print(f"\nCluster {cluster_id} ({len(cluster_data)} customers):")
+    print(cluster_data[features].describe())
+
+# === Interpret clusters ===
+print("\n=== CLUSTER INTERPRETATION ===")
+for idx, row in centroid_df.iterrows():
+    age = "Young" if row['age'] < 35 else "Middle-aged" if row['age'] < 50 else "Mature"
+    income = "low-income" if row['income'] < 45 else "mid-income" if row['income'] < 70 else "high-income"
+    freq = "infrequent" if row['purchase_freq'] < 5 else "regular" if row['purchase_freq'] < 12 else "frequent"
+    print(f"Cluster {idx}: {age}, {income}, {freq} buyers")
+
+# === Assign new customer to cluster ===
+new_customer = pd.DataFrame({
+    'age': [40],
+    'income': [60],
+    'purchase_freq': [8]
+})
+new_customer_scaled = scaler.transform(new_customer)
+cluster_assignment = kmeans.predict(new_customer_scaled)[0]
+print(f"\n=== NEW CUSTOMER ASSIGNMENT ===")
+print(f"New customer assigned to Cluster {cluster_assignment}")</code></pre>
+            </div>
+
+            <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mt-4">
+                <h4 class="font-bold text-yellow-900 mb-2">How to interpret:</h4>
+                <ul class="text-sm text-gray-700 space-y-1">
+                    <li><strong>Elbow plot:</strong> Look for "elbow" where adding clusters stops helping much</li>
+                    <li><strong>Centroids:</strong> Average values for each cluster (the "typical" customer)</li>
+                    <li><strong>WCSS:</strong> Lower is tighter clusters (but watch for overfitting)</li>
+                    <li><strong>⚠ Always standardize!</strong> Features with larger scales will dominate</li>
+                </ul>
+            </div>
+        </div>
+
         <!-- QUICK TABLE -->
         <div id="table" class="bg-white rounded-lg shadow-lg p-8 mb-8 border-t-4 border-pink-500">
             <div class="emoji-header mb-4">📋</div>
