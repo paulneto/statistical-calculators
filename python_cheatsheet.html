@@ -71,6 +71,10 @@
                 <a href="#chi" style="background-color: #d1fae5;" class="px-3 py-1 text-green-700 rounded-full hover:bg-green-200 whitespace-nowrap">Chi-Square</a>
                 <a href="#correlation" style="background-color: #fef3c7;" class="px-3 py-1 text-yellow-700 rounded-full hover:bg-yellow-200 whitespace-nowrap">Correlation</a>
                 <a href="#regression" style="background-color: #fed7aa;" class="px-3 py-1 text-orange-700 rounded-full hover:bg-orange-200 whitespace-nowrap">Regression</a>
+                <a href="#multiple-regression" style="background-color: #dbeafe;" class="px-3 py-1 text-blue-700 rounded-full hover:bg-blue-200 whitespace-nowrap">Multi-Reg</a>
+                <a href="#posthoc" style="background-color: #f3e8ff;" class="px-3 py-1 text-purple-700 rounded-full hover:bg-purple-200 whitespace-nowrap">Post-Hoc</a>
+                <a href="#logistic" style="background-color: #fce7f3;" class="px-3 py-1 text-pink-700 rounded-full hover:bg-pink-200 whitespace-nowrap">Logistic</a>
+                <a href="#cluster" style="background-color: #d1fae5;" class="px-3 py-1 text-green-700 rounded-full hover:bg-green-200 whitespace-nowrap">Clustering</a>
                 <a href="#mann" style="background-color: #e0e7ff;" class="px-3 py-1 text-indigo-700 rounded-full hover:bg-indigo-200 whitespace-nowrap">Mann-Whitney</a>
                 <a href="#proportions" style="background-color: #cffafe;" class="px-3 py-1 text-cyan-700 rounded-full hover:bg-cyan-200 whitespace-nowrap">Proportions</a>
                 <a href="#bayesian" style="background-color: #ede9fe;" class="px-3 py-1 text-violet-700 rounded-full hover:bg-violet-200 whitespace-nowrap">Bayesian</a>
@@ -576,12 +580,12 @@ else:
         </div>
 
         <!-- MULTIPLE REGRESSION -->
-        <div id="multiple-regression" class="bg-white rounded-lg shadow-lg p-8 mb-8 border-t-4 border-sky-500">
+        <div id="multiple-regression" class="bg-white rounded-lg shadow-lg p-8 mb-8 border-t-4 border-blue-500">
             <div class="emoji-header mb-4">📊</div>
-            <h2 class="text-3xl font-bold mb-4 text-sky-700">Multiple Regression</h2>
+            <h2 class="text-3xl font-bold mb-4 text-blue-700">Multiple Regression</h2>
             <p class="text-gray-600 mb-4">Predict an outcome using multiple predictor variables at once</p>
 
-            <div class="bg-gradient-to-r from-sky-50 to-blue-50 rounded-lg p-6 mb-6">
+            <div class="bg-blue-50 rounded-lg p-6 mb-6">
                 <h3 class="font-bold text-gray-800 mb-2">💡 Scenario:</h3>
                 <p class="text-gray-700">Predict monthly sales from ad spend, seasonality, and price</p>
             </div>
@@ -658,12 +662,12 @@ print(f"\nPredicted sales: ${prediction[0]:.0f}k")</code></pre>
         </div>
 
         <!-- POST-HOC TESTS -->
-        <div id="posthoc" class="bg-white rounded-lg shadow-lg p-8 mb-8 border-t-4 border-lime-500">
+        <div id="posthoc" class="bg-white rounded-lg shadow-lg p-8 mb-8 border-t-4 border-purple-500">
             <div class="emoji-header mb-4">🔍</div>
-            <h2 class="text-3xl font-bold mb-4 text-lime-700">Post-Hoc Tests</h2>
+            <h2 class="text-3xl font-bold mb-4 text-purple-700">Post-Hoc Tests</h2>
             <p class="text-gray-600 mb-4">Find which specific groups differ after significant ANOVA</p>
 
-            <div class="bg-gradient-to-r from-lime-50 to-green-50 rounded-lg p-6 mb-6">
+            <div class="bg-purple-50 rounded-lg p-6 mb-6">
                 <h3 class="font-bold text-gray-800 mb-2">💡 Scenario:</h3>
                 <p class="text-gray-700">After ANOVA shows email types differ, find which ones specifically</p>
             </div>
@@ -736,12 +740,12 @@ print(summary)</code></pre>
         </div>
 
         <!-- LOGISTIC REGRESSION -->
-        <div id="logistic" class="bg-white rounded-lg shadow-lg p-8 mb-8 border-t-4 border-fuchsia-500">
+        <div id="logistic" class="bg-white rounded-lg shadow-lg p-8 mb-8 border-t-4 border-pink-500">
             <div class="emoji-header mb-4">🎯</div>
-            <h2 class="text-3xl font-bold mb-4 text-fuchsia-700">Logistic Regression</h2>
+            <h2 class="text-3xl font-bold mb-4 text-pink-700">Logistic Regression</h2>
             <p class="text-gray-600 mb-4">Predict binary outcomes (yes/no, 0/1, convert/don't convert)</p>
 
-            <div class="bg-gradient-to-r from-fuchsia-50 to-pink-50 rounded-lg p-6 mb-6">
+            <div class="bg-pink-50 rounded-lg p-6 mb-6">
                 <h3 class="font-bold text-gray-800 mb-2">💡 Scenario:</h3>
                 <p class="text-gray-700">Predict whether a customer will purchase based on age, income, and website visits</p>
             </div>
@@ -835,12 +839,12 @@ print(f"Probability of purchase: {prob:.1%}")</code></pre>
         </div>
 
         <!-- CLUSTER ANALYSIS -->
-        <div id="cluster" class="bg-white rounded-lg shadow-lg p-8 mb-8 border-t-4 border-emerald-500">
+        <div id="cluster" class="bg-white rounded-lg shadow-lg p-8 mb-8 border-t-4 border-green-500">
             <div class="emoji-header mb-4">🔵</div>
-            <h2 class="text-3xl font-bold mb-4 text-emerald-700">Cluster Analysis (K-Means)</h2>
+            <h2 class="text-3xl font-bold mb-4 text-green-700">Cluster Analysis (K-Means)</h2>
             <p class="text-gray-600 mb-4">Find natural groups/segments in your data without predefined labels</p>
 
-            <div class="bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg p-6 mb-6">
+            <div class="bg-green-50 rounded-lg p-6 mb-6">
                 <h3 class="font-bold text-gray-800 mb-2">💡 Scenario:</h3>
                 <p class="text-gray-700">Segment customers into groups based on age, income, and purchase behavior</p>
             </div>

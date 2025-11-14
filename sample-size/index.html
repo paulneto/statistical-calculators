@@ -292,7 +292,7 @@
             return (
                 <div className="w-full max-w-4xl mx-auto bg-white rounded-lg shadow p-6">
                     <div className="mb-6">
-                        <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent">
+                        <h1 className="text-2xl font-bold text-pink-600">
                             Sample Size Calculator
                         </h1>
                         <p className="text-gray-600 mt-2">
@@ -307,7 +307,7 @@
                                 onClick={() => setTestType('t-test')}
                                 className={`px-4 py-2 rounded ${
                                     testType === 't-test'
-                                    ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white'
+                                    ? 'bg-pink-600 text-white'
                                     : 'bg-gray-200'
                                 }`}
                             >
@@ -317,7 +317,7 @@
                                 onClick={() => setTestType('proportions')}
                                 className={`px-4 py-2 rounded ${
                                     testType === 'proportions'
-                                    ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white'
+                                    ? 'bg-pink-600 text-white'
                                     : 'bg-gray-200'
                                 }`}
                             >
@@ -327,7 +327,7 @@
                                 onClick={() => setTestType('correlation')}
                                 className={`px-4 py-2 rounded ${
                                     testType === 'correlation'
-                                    ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white'
+                                    ? 'bg-pink-600 text-white'
                                     : 'bg-gray-200'
                                 }`}
                             >
@@ -337,7 +337,7 @@
                                 onClick={() => setTestType('anova')}
                                 className={`px-4 py-2 rounded ${
                                     testType === 'anova'
-                                    ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white'
+                                    ? 'bg-pink-600 text-white'
                                     : 'bg-gray-200'
                                 }`}
                             >
@@ -493,7 +493,7 @@
                     </div>
 
                     {results && (
-                        <div className="mt-6 p-6 bg-gradient-to-r from-pink-50 to-rose-50 rounded-lg border-2 border-pink-200">
+                        <div className="mt-6 p-6 bg-pink-50 rounded-lg border-2 border-pink-200">
                             <h3 className="font-bold text-lg mb-4 text-pink-700">Required Sample Size</h3>
                             <div className="grid md:grid-cols-3 gap-4">
                                 {testType === 'correlation' ? (
@@ -587,7 +587,7 @@
                     <div className="mt-6">
                         <button
                             onClick={() => setShowPowerCurve(!showPowerCurve)}
-                            className="px-4 py-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded hover:from-pink-600 hover:to-rose-600"
+                            className="px-4 py-2 bg-pink-600 text-white rounded hover:bg-pink-700"
                         >
                             {showPowerCurve ? 'Hide' : 'Show'} Power Curve
                         </button>
@@ -616,7 +616,7 @@
                                                     <td className="py-2">
                                                         <div className="w-full bg-gray-200 rounded h-4">
                                                             <div
-                                                                className={`h-4 rounded ${isTarget ? 'bg-gradient-to-r from-pink-500 to-rose-500' : 'bg-gray-400'}`}
+                                                                className={`h-4 rounded ${isTarget ? 'bg-pink-600' : 'bg-gray-400'}`}
                                                                 style={{ width: `${barWidth}%` }}
                                                             ></div>
                                                         </div>
