@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiple Regression Calculator</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jstat/1.9.5/jstat.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        function MultipleRegressionCalculator() {
+            // Example data: Predicting sales from ad spend, seasonality, and pricing
+            const exampleData = `Sales,AdSpend,Season,Price
+85,10,1,50
+110,15,1,45
+95,12,2,48
+140,20,1,40
+125,18,1,42
+75,8,2,52
+90,11,2,50
+155,25,1,38
+130,19,1,41
+80,9,2,51
+100,13,2,47
+145,22,1,39
+115,16,1,43
+70,7,2,53
+105,14,2,46`;
+
+            const [dataInput, setDataInput] = useState(exampleData);
+            const [results, setResults] = useState(null);
+
+            const calculateRegression = () => {
+                try {
+                    // Parse data
+                    const lines = dataInput.trim().split('\n');
+                    const headers = lines[0].split(',');
+                    const data = lines.slice(1).map(line =>
+                        line.split(',').map(val => parseFloat(val.trim()))
+                    );
+
+                    if (data.length < 4) {
+                        alert('Need at least 4 data points');
+                        return;
+                    }
+
+                    // Separate dependent (Y) and independent variables (X)
+                    const y = data.map(row => row[0]);
+                    const X = data.map(row => row.slice(1));
+                    const n = y.length;
+                    const k = X[0].length; // number of predictors
+
+                    // Add intercept column (column of 1s)
+                    const X_with_intercept = X.map(row => [1, ...row]);
+
+                    // Calculate coefficients using matrix algebra
+                    // β = (X'X)^-1 X'y
+                    const XT = transpose(X_with_intercept);
+                    const XTX = matrixMultiply(XT, X_with_intercept);
+                    const XTX_inv = matrixInverse(XTX);
+                    const XTy = matrixVectorMultiply(XT, y);
+                    const coefficients = matrixVectorMultiply(XTX_inv, XTy);
+
+                    // Calculate predictions and residuals
+                    const predictions = X_with_intercept.map(row =>
+                        row.reduce((sum, val, i) => sum + val * coefficients[i], 0)
+                    );
+                    const residuals = y.map((val, i) => val - predictions[i]);
+
+                    // Calculate R-squared
+                    const yMean = y.reduce((a, b) => a + b) / n;
+                    const SST = y.reduce((sum, val) => sum + Math.pow(val - yMean, 2), 0);
+                    const SSR = predictions.reduce((sum, val) => sum + Math.pow(val - yMean, 2), 0);
+                    const SSE = residuals.reduce((sum, val) => sum + Math.pow(val, 2), 0);
+                    const rSquared = SSR / SST;
+                    const adjRSquared = 1 - ((1 - rSquared) * (n - 1) / (n - k - 1));
+
+                    // Calculate standard errors and t-statistics
+                    const MSE = SSE / (n - k - 1);
+                    const standardErrors = coefficients.map((_, i) =>
+                        Math.sqrt(MSE * XTX_inv[i][i])
+                    );
+                    const tStats = coefficients.map((coef, i) => coef / standardErrors[i]);
+                    const df = n - k - 1;
+                    const pValues = tStats.map(t =>
+                        2 * (1 - jStat.studentt.cdf(Math.abs(t), df))
+                    );
+
+                    // F-statistic for overall model
+                    const fStat = (SSR / k) / (SSE / (n - k - 1));
+                    const fPValue = 1 - jStat.centralF.cdf(fStat, k, n - k - 1);
+
+                    // Calculate VIF (Variance Inflation Factor) for multicollinearity check
+                    const vif = calculateVIF(X);
+
+                    setResults({
+                        coefficients: coefficients.map((coef, i) => ({
+                            name: i === 0 ? 'Intercept' : headers[i],
+                            value: coef,
+                            se: standardErrors[i],
+                            tStat: tStats[i],
+                            pValue: pValues[i]
+                        })),
+                        rSquared,
+                        adjRSquared,
+                        fStat,
+                        fPValue,
+                        n,
+                        k,
+                        vif,
+                        predictions,
+                        residuals,
+                        headers
+                    });
+                } catch (error) {
+                    alert('Error calculating regression: ' + error.message);
+                }
+            };
+
+            // Helper functions
+            const transpose = (matrix) => {
+                return matrix[0].map((_, i) => matrix.map(row => row[i]));
+            };
+
+            const matrixMultiply = (a, b) => {
+                const result = Array(a.length).fill().map(() => Array(b[0].length).fill(0));
+                for (let i = 0; i < a.length; i++) {
+                    for (let j = 0; j < b[0].length; j++) {
+                        for (let k = 0; k < a[0].length; k++) {
+                            result[i][j] += a[i][k] * b[k][j];
+                        }
+                    }
+                }
+                return result;
+            };
+
+            const matrixVectorMultiply = (matrix, vector) => {
+                return matrix.map(row =>
+                    row.reduce((sum, val, i) => sum + val * vector[i], 0)
+                );
+            };
+
+            const matrixInverse = (matrix) => {
+                const n = matrix.length;
+                const augmented = matrix.map((row, i) => [
+                    ...row,
+                    ...Array(n).fill(0).map((_, j) => i === j ? 1 : 0)
+                ]);
+
+                // Gaussian elimination
+                for (let i = 0; i < n; i++) {
+                    let maxRow = i;
+                    for (let k = i + 1; k < n; k++) {
+                        if (Math.abs(augmented[k][i]) > Math.abs(augmented[maxRow][i])) {
+                            maxRow = k;
+                        }
+                    }
+                    [augmented[i], augmented[maxRow]] = [augmented[maxRow], augmented[i]];
+
+                    const pivot = augmented[i][i];
+                    for (let j = 0; j < 2 * n; j++) {
+                        augmented[i][j] /= pivot;
+                    }
+
+                    for (let k = 0; k < n; k++) {
+                        if (k !== i) {
+                            const factor = augmented[k][i];
+                            for (let j = 0; j < 2 * n; j++) {
+                                augmented[k][j] -= factor * augmented[i][j];
+                            }
+                        }
+                    }
+                }
+
+                return augmented.map(row => row.slice(n));
+            };
+
+            const calculateVIF = (X) => {
+                const k = X[0].length;
+                if (k === 1) return [1]; // Only one predictor, no multicollinearity
+
+                const vifValues = [];
+                for (let j = 0; j < k; j++) {
+                    // For each predictor, regress it on all other predictors
+                    const y_j = X.map(row => row[j]);
+                    const X_j = X.map(row => row.filter((_, idx) => idx !== j));
+
+                    try {
+                        // Calculate R² for this regression
+                        const X_j_with_intercept = X_j.map(row => [1, ...row]);
+                        const XT = transpose(X_j_with_intercept);
+                        const XTX = matrixMultiply(XT, X_j_with_intercept);
+                        const XTX_inv = matrixInverse(XTX);
+                        const XTy = matrixVectorMultiply(XT, y_j);
+                        const coef = matrixVectorMultiply(XTX_inv, XTy);
+
+                        const predictions = X_j_with_intercept.map(row =>
+                            row.reduce((sum, val, i) => sum + val * coef[i], 0)
+                        );
+
+                        const yMean = y_j.reduce((a, b) => a + b) / y_j.length;
+                        const SST = y_j.reduce((sum, val) => sum + Math.pow(val - yMean, 2), 0);
+                        const SSR = predictions.reduce((sum, val) => sum + Math.pow(val - yMean, 2), 0);
+                        const rSquared_j = SSR / SST;
+
+                        vifValues.push(1 / (1 - rSquared_j));
+                    } catch {
+                        vifValues.push(null);
+                    }
+                }
+                return vifValues;
+            };
+
+            return (
+                <div className="min-h-screen bg-gray-50 py-8">
+                    <div className="max-w-6xl mx-auto px-4">
+                        {/* Header */}
+                        <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-lg shadow-lg p-8 mb-8 text-white">
+                            <h1 className="text-4xl font-bold mb-4">Multiple Regression Calculator</h1>
+                            <p className="text-xl opacity-90">
+                                Predict outcomes using multiple predictor variables
+                            </p>
+                        </div>
+
+                        {/* Info Section */}
+                        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+                            <h2 className="text-2xl font-bold mb-4 text-gray-800">What is Multiple Regression?</h2>
+                            <p className="text-gray-700 mb-4">
+                                Multiple regression extends simple linear regression by allowing you to predict an outcome
+                                using <strong>multiple predictor variables</strong>. For example: "Predict sales from ad spend,
+                                seasonality, AND pricing" instead of just one factor.
+                            </p>
+                            <div className="bg-orange-50 border-l-4 border-orange-500 p-4 mb-4">
+                                <h3 className="font-bold text-orange-900 mb-2">When to use it:</h3>
+                                <ul className="list-disc list-inside text-gray-700 space-y-1">
+                                    <li>Predicting outcomes with multiple factors</li>
+                                    <li>Understanding which factors matter most</li>
+                                    <li>Controlling for confounding variables</li>
+                                    <li>Building predictive models</li>
+                                </ul>
+                            </div>
+                            <div className="bg-blue-50 border-l-4 border-blue-500 p-4">
+                                <h3 className="font-bold text-blue-900 mb-2">Example Use Cases:</h3>
+                                <ul className="list-disc list-inside text-gray-700 space-y-1">
+                                    <li><strong>Marketing:</strong> Predict sales from ad spend, seasonality, pricing</li>
+                                    <li><strong>E-commerce:</strong> Predict conversion rate from traffic, page load time, product reviews</li>
+                                    <li><strong>Real Estate:</strong> Predict house price from size, location, age</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        {/* Data Input */}
+                        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+                            <h2 className="text-2xl font-bold mb-4 text-gray-800">Enter Your Data</h2>
+                            <p className="text-gray-600 mb-4">
+                                Format: First column is the outcome variable (Y), remaining columns are predictors (X₁, X₂, X₃...).
+                                Include headers. Use commas to separate values.
+                            </p>
+                            <textarea
+                                className="w-full h-64 p-4 border border-gray-300 rounded-lg font-mono text-sm"
+                                value={dataInput}
+                                onChange={(e) => setDataInput(e.target.value)}
+                                placeholder="Sales,AdSpend,Season,Price&#10;85,10,1,50&#10;110,15,1,45&#10;..."
+                            />
+                            <button
+                                onClick={calculateRegression}
+                                className="mt-4 bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-8 rounded-lg transition duration-200"
+                            >
+                                Calculate Regression
+                            </button>
+                        </div>
+
+                        {/* Results */}
+                        {results && (
+                            <div className="space-y-8">
+                                {/* Model Summary */}
+                                <div className="bg-white rounded-lg shadow-md p-6">
+                                    <h2 className="text-2xl font-bold mb-4 text-gray-800">Model Summary</h2>
+                                    <div className="grid md:grid-cols-2 gap-6">
+                                        <div className="bg-green-50 rounded-lg p-4">
+                                            <h3 className="font-bold text-green-900 mb-2">R-squared</h3>
+                                            <p className="text-3xl font-bold text-green-700">{results.rSquared.toFixed(4)}</p>
+                                            <p className="text-sm text-gray-600 mt-2">
+                                                {(results.rSquared * 100).toFixed(1)}% of variance explained
+                                            </p>
+                                        </div>
+                                        <div className="bg-blue-50 rounded-lg p-4">
+                                            <h3 className="font-bold text-blue-900 mb-2">Adjusted R-squared</h3>
+                                            <p className="text-3xl font-bold text-blue-700">{results.adjRSquared.toFixed(4)}</p>
+                                            <p className="text-sm text-gray-600 mt-2">
+                                                Adjusted for number of predictors
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="mt-6 grid md:grid-cols-3 gap-4 text-sm">
+                                        <div>
+                                            <span className="font-semibold">F-statistic:</span> {results.fStat.toFixed(3)}
+                                        </div>
+                                        <div>
+                                            <span className="font-semibold">P-value:</span> {results.fPValue < 0.0001 ? '<0.0001' : results.fPValue.toFixed(4)}
+                                        </div>
+                                        <div>
+                                            <span className="font-semibold">Sample size:</span> {results.n}
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 p-4 bg-yellow-50 border-l-4 border-yellow-500">
+                                        <p className="text-sm text-gray-700">
+                                            <strong>Overall Model Significance:</strong> {results.fPValue < 0.05
+                                                ? `✓ The model is statistically significant (p < 0.05). At least one predictor is related to the outcome.`
+                                                : `✗ The model is not significant (p ≥ 0.05). Predictors may not explain the outcome.`}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Coefficients */}
+                                <div className="bg-white rounded-lg shadow-md p-6">
+                                    <h2 className="text-2xl font-bold mb-4 text-gray-800">Regression Coefficients</h2>
+                                    <p className="text-gray-600 mb-4">
+                                        Each coefficient shows the effect of that variable on the outcome, holding other variables constant.
+                                    </p>
+                                    <div className="overflow-x-auto">
+                                        <table className="min-w-full">
+                                            <thead className="bg-gray-100">
+                                                <tr>
+                                                    <th className="px-4 py-2 text-left">Variable</th>
+                                                    <th className="px-4 py-2 text-left">Coefficient</th>
+                                                    <th className="px-4 py-2 text-left">Std Error</th>
+                                                    <th className="px-4 py-2 text-left">t-statistic</th>
+                                                    <th className="px-4 py-2 text-left">P-value</th>
+                                                    <th className="px-4 py-2 text-left">Significant?</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {results.coefficients.map((coef, i) => (
+                                                    <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                                        <td className="px-4 py-2 font-semibold">{coef.name}</td>
+                                                        <td className="px-4 py-2">{coef.value.toFixed(4)}</td>
+                                                        <td className="px-4 py-2">{coef.se.toFixed(4)}</td>
+                                                        <td className="px-4 py-2">{coef.tStat.toFixed(3)}</td>
+                                                        <td className="px-4 py-2">{coef.pValue < 0.0001 ? '<0.0001' : coef.pValue.toFixed(4)}</td>
+                                                        <td className="px-4 py-2">
+                                                            {coef.pValue < 0.05 ? (
+                                                                <span className="text-green-600 font-semibold">✓ Yes</span>
+                                                            ) : (
+                                                                <span className="text-gray-500">✗ No</span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                {/* Regression Equation */}
+                                <div className="bg-white rounded-lg shadow-md p-6">
+                                    <h2 className="text-2xl font-bold mb-4 text-gray-800">Regression Equation</h2>
+                                    <div className="bg-gray-100 rounded-lg p-4 font-mono text-sm overflow-x-auto">
+                                        <p>
+                                            {results.headers[0]} = {results.coefficients[0].value.toFixed(4)}
+                                            {results.coefficients.slice(1).map((coef, i) => (
+                                                <span key={i}>
+                                                    {' '}{coef.value >= 0 ? '+' : ''} {coef.value.toFixed(4)} × {coef.name}
+                                                </span>
+                                            ))}
+                                        </p>
+                                    </div>
+                                    <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500">
+                                        <h3 className="font-bold text-blue-900 mb-2">How to interpret coefficients:</h3>
+                                        <ul className="text-sm text-gray-700 space-y-1">
+                                            {results.coefficients.slice(1).map((coef, i) => (
+                                                <li key={i}>
+                                                    <strong>{coef.name}:</strong> For every 1-unit increase in {coef.name},
+                                                    {results.headers[0]} {coef.value >= 0 ? 'increases' : 'decreases'} by {Math.abs(coef.value).toFixed(2)} units
+                                                    {coef.pValue < 0.05 ? ' (significant)' : ' (not significant)'}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                {/* Multicollinearity Check */}
+                                <div className="bg-white rounded-lg shadow-md p-6">
+                                    <h2 className="text-2xl font-bold mb-4 text-gray-800">Multicollinearity Check (VIF)</h2>
+                                    <p className="text-gray-600 mb-4">
+                                        VIF (Variance Inflation Factor) measures how much predictor variables are correlated with each other.
+                                    </p>
+                                    <div className="space-y-2">
+                                        {results.coefficients.slice(1).map((coef, i) => {
+                                            const vif = results.vif[i];
+                                            const color = vif === null ? 'gray' : vif < 5 ? 'green' : vif < 10 ? 'yellow' : 'red';
+                                            return (
+                                                <div key={i} className={`p-3 rounded-lg bg-${color}-50 border-l-4 border-${color}-500`}>
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="font-semibold">{coef.name}</span>
+                                                        <span className={`text-${color}-700 font-bold`}>
+                                                            {vif === null ? 'N/A' : vif.toFixed(2)}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs text-gray-600 mt-1">
+                                                        {vif === null ? 'Cannot calculate' :
+                                                         vif < 5 ? 'Low multicollinearity ✓' :
+                                                         vif < 10 ? 'Moderate multicollinearity ⚠' :
+                                                         'High multicollinearity - consider removing ⚠'}
+                                                    </p>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                                        <p className="text-sm text-gray-700">
+                                            <strong>Rule of thumb:</strong> VIF &lt; 5 = Good, VIF 5-10 = Moderate concern, VIF &gt; 10 = High multicollinearity
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Interpretation Guide */}
+                                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg shadow-md p-6 border-2 border-purple-200">
+                                    <h2 className="text-2xl font-bold mb-4 text-purple-900">📊 How to Interpret Results</h2>
+                                    <div className="space-y-4 text-gray-700">
+                                        <div>
+                                            <h3 className="font-bold text-purple-800 mb-2">1. Check Overall Model (F-test)</h3>
+                                            <p className="text-sm">Is p-value &lt; 0.05? If yes, at least one predictor is significant.</p>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-purple-800 mb-2">2. Check R-squared</h3>
+                                            <p className="text-sm">How much variance is explained? Higher is better, but context matters.</p>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-purple-800 mb-2">3. Check Individual Coefficients</h3>
+                                            <p className="text-sm">Which predictors are significant (p &lt; 0.05)? What's the direction (+/-)?</p>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-purple-800 mb-2">4. Check Multicollinearity (VIF)</h3>
+                                            <p className="text-sm">If VIF &gt; 10, consider removing highly correlated predictors.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Back Button */}
+                        <div className="mt-8 text-center">
+                            <a href="../index.html" className="text-orange-600 hover:text-orange-800 font-semibold">
+                                ← Back to Calculator Collection
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<MultipleRegressionCalculator />, document.getElementById('root'));
+    </script>
+</body>
+</html>

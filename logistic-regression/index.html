@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logistic Regression Calculator</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jstat/1.9.5/jstat.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        function LogisticRegressionCalculator() {
+            // Example data: Predicting customer purchase (1/0) from age, income, and website visits
+            const exampleData = `Purchase,Age,Income,Visits
+1,35,65000,5
+0,28,45000,2
+1,42,75000,8
+1,50,85000,10
+0,22,35000,1
+1,38,70000,6
+0,25,40000,3
+1,45,80000,9
+1,55,95000,12
+0,30,50000,4
+1,40,72000,7
+0,26,42000,2
+1,48,88000,11
+0,24,38000,1
+1,52,90000,10
+0,29,48000,3
+1,36,68000,6
+1,44,78000,8
+0,27,44000,2
+1,51,92000,11`;
+
+            const [dataInput, setDataInput] = useState(exampleData);
+            const [results, setResults] = useState(null);
+
+            const calculateLogisticRegression = () => {
+                try {
+                    // Parse data
+                    const lines = dataInput.trim().split('\n');
+                    const headers = lines[0].split(',');
+                    const data = lines.slice(1).map(line =>
+                        line.split(',').map(val => parseFloat(val.trim()))
+                    );
+
+                    if (data.length < 4) {
+                        alert('Need at least 4 data points');
+                        return;
+                    }
+
+                    // Separate dependent (Y) and independent variables (X)
+                    const y = data.map(row => row[0]);
+                    const X = data.map(row => row.slice(1));
+                    const n = y.length;
+                    const k = X[0].length; // number of predictors
+
+                    // Validate binary outcome
+                    const uniqueY = [...new Set(y)];
+                    if (uniqueY.length !== 2 || !uniqueY.every(val => val === 0 || val === 1)) {
+                        alert('Outcome variable must be binary (0 or 1)');
+                        return;
+                    }
+
+                    // Add intercept column (column of 1s)
+                    const X_with_intercept = X.map(row => [1, ...row]);
+
+                    // Newton-Raphson method for maximum likelihood estimation
+                    let coefficients = Array(k + 1).fill(0); // Initialize at 0
+                    const maxIterations = 100;
+                    const tolerance = 1e-6;
+
+                    for (let iter = 0; iter < maxIterations; iter++) {
+                        // Calculate probabilities
+                        const probabilities = X_with_intercept.map(row => {
+                            const z = row.reduce((sum, val, i) => sum + val * coefficients[i], 0);
+                            return 1 / (1 + Math.exp(-z)); // Logistic function
+                        });
+
+                        // Calculate gradient (first derivative)
+                        const gradient = Array(k + 1).fill(0);
+                        for (let j = 0; j < k + 1; j++) {
+                            for (let i = 0; i < n; i++) {
+                                gradient[j] += X_with_intercept[i][j] * (y[i] - probabilities[i]);
+                            }
+                        }
+
+                        // Calculate Hessian (second derivative matrix)
+                        const hessian = Array(k + 1).fill().map(() => Array(k + 1).fill(0));
+                        for (let j1 = 0; j1 < k + 1; j1++) {
+                            for (let j2 = 0; j2 < k + 1; j2++) {
+                                for (let i = 0; i < n; i++) {
+                                    const p = probabilities[i];
+                                    hessian[j1][j2] -= X_with_intercept[i][j1] * X_with_intercept[i][j2] * p * (1 - p);
+                                }
+                            }
+                        }
+
+                        // Update coefficients: β_new = β_old - H^(-1) * gradient
+                        const hessianInv = matrixInverse(hessian);
+                        const update = matrixVectorMultiply(hessianInv, gradient);
+
+                        let maxChange = 0;
+                        for (let j = 0; j < k + 1; j++) {
+                            const change = Math.abs(update[j]);
+                            if (change > maxChange) maxChange = change;
+                            coefficients[j] -= update[j];
+                        }
+
+                        // Check convergence
+                        if (maxChange < tolerance) {
+                            break;
+                        }
+                    }
+
+                    // Calculate final probabilities and predictions
+                    const probabilities = X_with_intercept.map(row => {
+                        const z = row.reduce((sum, val, i) => sum + val * coefficients[i], 0);
+                        return 1 / (1 + Math.exp(-z));
+                    });
+                    const predictions = probabilities.map(p => p >= 0.5 ? 1 : 0);
+
+                    // Calculate standard errors from observed information matrix
+                    // Observed information I = -H (negative Hessian)
+                    // Covariance matrix = I^(-1) = (-H)^(-1)
+                    const finalProbs = probabilities;
+                    const negHessian = Array(k + 1).fill().map(() => Array(k + 1).fill(0));
+                    for (let j1 = 0; j1 < k + 1; j1++) {
+                        for (let j2 = 0; j2 < k + 1; j2++) {
+                            for (let i = 0; i < n; i++) {
+                                const p = finalProbs[i];
+                                negHessian[j1][j2] -= X_with_intercept[i][j1] * X_with_intercept[i][j2] * p * (1 - p);
+                            }
+                        }
+                    }
+                    // Covariance is inverse of negative Hessian (observed information)
+                    const covMatrix = matrixInverse(negHessian);
+                    const standardErrors = covMatrix.map((row, i) => Math.sqrt(Math.abs(row[i])));
+
+                    // Calculate z-statistics and p-values
+                    const zStats = coefficients.map((coef, i) => coef / standardErrors[i]);
+                    const pValues = zStats.map(z => 2 * (1 - jStat.normal.cdf(Math.abs(z), 0, 1)));
+
+                    // Calculate odds ratios
+                    const oddsRatios = coefficients.map(coef => Math.exp(coef));
+
+                    // Confusion matrix
+                    let truePos = 0, trueNeg = 0, falsePos = 0, falseNeg = 0;
+                    for (let i = 0; i < n; i++) {
+                        if (y[i] === 1 && predictions[i] === 1) truePos++;
+                        else if (y[i] === 0 && predictions[i] === 0) trueNeg++;
+                        else if (y[i] === 0 && predictions[i] === 1) falsePos++;
+                        else if (y[i] === 1 && predictions[i] === 0) falseNeg++;
+                    }
+
+                    // Calculate metrics
+                    const accuracy = (truePos + trueNeg) / n;
+                    const precision = truePos / (truePos + falsePos) || 0;
+                    const recall = truePos / (truePos + falseNeg) || 0;
+                    const f1Score = 2 * (precision * recall) / (precision + recall) || 0;
+
+                    // Calculate log-likelihood and pseudo R-squared (McFadden's)
+                    const logLikelihood = y.reduce((sum, yi, i) => {
+                        const p = probabilities[i];
+                        return sum + (yi * Math.log(p + 1e-10) + (1 - yi) * Math.log(1 - p + 1e-10));
+                    }, 0);
+
+                    const nullProb = y.reduce((sum, val) => sum + val, 0) / n;
+                    const nullLogLikelihood = y.reduce((sum, yi) => {
+                        return sum + (yi * Math.log(nullProb + 1e-10) + (1 - yi) * Math.log(1 - nullProb + 1e-10));
+                    }, 0);
+
+                    const mcFaddenR2 = 1 - (logLikelihood / nullLogLikelihood);
+
+                    setResults({
+                        coefficients: coefficients.map((coef, i) => ({
+                            name: i === 0 ? 'Intercept' : headers[i],
+                            value: coef,
+                            se: standardErrors[i],
+                            zStat: zStats[i],
+                            pValue: pValues[i],
+                            oddsRatio: oddsRatios[i]
+                        })),
+                        confusionMatrix: { truePos, trueNeg, falsePos, falseNeg },
+                        accuracy,
+                        precision,
+                        recall,
+                        f1Score,
+                        mcFaddenR2,
+                        logLikelihood,
+                        n,
+                        k,
+                        headers,
+                        probabilities,
+                        predictions,
+                        y
+                    });
+                } catch (error) {
+                    alert('Error calculating logistic regression: ' + error.message);
+                }
+            };
+
+            // Helper functions
+            const matrixInverse = (matrix) => {
+                const n = matrix.length;
+                const augmented = matrix.map((row, i) => [
+                    ...row,
+                    ...Array(n).fill(0).map((_, j) => i === j ? 1 : 0)
+                ]);
+
+                // Gaussian elimination with partial pivoting
+                for (let i = 0; i < n; i++) {
+                    let maxRow = i;
+                    for (let k = i + 1; k < n; k++) {
+                        if (Math.abs(augmented[k][i]) > Math.abs(augmented[maxRow][i])) {
+                            maxRow = k;
+                        }
+                    }
+                    [augmented[i], augmented[maxRow]] = [augmented[maxRow], augmented[i]];
+
+                    const pivot = augmented[i][i];
+                    if (Math.abs(pivot) < 1e-10) {
+                        throw new Error('Matrix is singular and cannot be inverted');
+                    }
+
+                    for (let j = 0; j < 2 * n; j++) {
+                        augmented[i][j] /= pivot;
+                    }
+
+                    for (let k = 0; k < n; k++) {
+                        if (k !== i) {
+                            const factor = augmented[k][i];
+                            for (let j = 0; j < 2 * n; j++) {
+                                augmented[k][j] -= factor * augmented[i][j];
+                            }
+                        }
+                    }
+                }
+
+                return augmented.map(row => row.slice(n));
+            };
+
+            const matrixVectorMultiply = (matrix, vector) => {
+                return matrix.map(row =>
+                    row.reduce((sum, val, i) => sum + val * vector[i], 0)
+                );
+            };
+
+            return (
+                <div className="min-h-screen bg-gray-50 py-8">
+                    <div className="max-w-6xl mx-auto px-4">
+                        {/* Header */}
+                        <div className="bg-gradient-to-r from-teal-500 to-blue-500 rounded-lg shadow-lg p-8 mb-8 text-white">
+                            <h1 className="text-4xl font-bold mb-4">Logistic Regression Calculator</h1>
+                            <p className="text-xl opacity-90">
+                                Predict binary outcomes (Yes/No, 0/1) using multiple predictor variables
+                            </p>
+                        </div>
+
+                        {/* Info Section */}
+                        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+                            <h2 className="text-2xl font-bold mb-4 text-gray-800">What is Logistic Regression?</h2>
+                            <p className="text-gray-700 mb-4">
+                                Logistic regression is used to predict <strong>binary outcomes</strong> (0 or 1, Yes or No, True or False)
+                                based on one or more predictor variables. Unlike linear regression which predicts continuous values,
+                                logistic regression predicts the <strong>probability</strong> of an event occurring.
+                            </p>
+                            <div className="bg-teal-50 border-l-4 border-teal-500 p-4 mb-4">
+                                <h3 className="font-bold text-teal-900 mb-2">When to use it:</h3>
+                                <ul className="list-disc list-inside text-gray-700 space-y-1">
+                                    <li>Predicting customer purchase (Yes/No)</li>
+                                    <li>Email spam classification (Spam/Not Spam)</li>
+                                    <li>Loan default prediction (Default/No Default)</li>
+                                    <li>Disease diagnosis (Positive/Negative)</li>
+                                </ul>
+                            </div>
+                            <div className="bg-blue-50 border-l-4 border-blue-500 p-4">
+                                <h3 className="font-bold text-blue-900 mb-2">Example Use Cases:</h3>
+                                <ul className="list-disc list-inside text-gray-700 space-y-1">
+                                    <li><strong>Marketing:</strong> Predict purchase from age, income, website visits</li>
+                                    <li><strong>E-commerce:</strong> Predict conversion from traffic source, time on site, cart value</li>
+                                    <li><strong>Healthcare:</strong> Predict disease risk from age, BMI, blood pressure</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        {/* Data Input */}
+                        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+                            <h2 className="text-2xl font-bold mb-4 text-gray-800">Enter Your Data</h2>
+                            <p className="text-gray-600 mb-4">
+                                Format: First column is the binary outcome (0 or 1), remaining columns are predictors.
+                                Include headers. Use commas to separate values.
+                            </p>
+                            <textarea
+                                className="w-full h-64 p-4 border border-gray-300 rounded-lg font-mono text-sm"
+                                value={dataInput}
+                                onChange={(e) => setDataInput(e.target.value)}
+                                placeholder="Purchase,Age,Income,Visits&#10;1,35,65000,5&#10;0,28,45000,2&#10;..."
+                            />
+                            <button
+                                onClick={calculateLogisticRegression}
+                                className="mt-4 bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-8 rounded-lg transition duration-200"
+                            >
+                                Calculate Logistic Regression
+                            </button>
+                        </div>
+
+                        {/* Results */}
+                        {results && (
+                            <div className="space-y-8">
+                                {/* Model Summary */}
+                                <div className="bg-white rounded-lg shadow-md p-6">
+                                    <h2 className="text-2xl font-bold mb-4 text-gray-800">Model Summary</h2>
+                                    <div className="grid md:grid-cols-2 gap-6">
+                                        <div className="bg-green-50 rounded-lg p-4">
+                                            <h3 className="font-bold text-green-900 mb-2">McFadden's R-squared</h3>
+                                            <p className="text-3xl font-bold text-green-700">{results.mcFaddenR2.toFixed(4)}</p>
+                                            <p className="text-sm text-gray-600 mt-2">
+                                                Pseudo R-squared (0.2-0.4 is considered good)
+                                            </p>
+                                        </div>
+                                        <div className="bg-blue-50 rounded-lg p-4">
+                                            <h3 className="font-bold text-blue-900 mb-2">Accuracy</h3>
+                                            <p className="text-3xl font-bold text-blue-700">{(results.accuracy * 100).toFixed(1)}%</p>
+                                            <p className="text-sm text-gray-600 mt-2">
+                                                Correctly classified observations
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="mt-6 grid md:grid-cols-3 gap-4 text-sm">
+                                        <div>
+                                            <span className="font-semibold">Precision:</span> {(results.precision * 100).toFixed(1)}%
+                                        </div>
+                                        <div>
+                                            <span className="font-semibold">Recall:</span> {(results.recall * 100).toFixed(1)}%
+                                        </div>
+                                        <div>
+                                            <span className="font-semibold">F1 Score:</span> {results.f1Score.toFixed(3)}
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 p-4 bg-yellow-50 border-l-4 border-yellow-500">
+                                        <p className="text-sm text-gray-700">
+                                            <strong>Log-Likelihood:</strong> {results.logLikelihood.toFixed(3)} (higher is better)
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Confusion Matrix */}
+                                <div className="bg-white rounded-lg shadow-md p-6">
+                                    <h2 className="text-2xl font-bold mb-4 text-gray-800">Confusion Matrix</h2>
+                                    <p className="text-gray-600 mb-4">
+                                        Shows how well the model classifies actual vs predicted outcomes.
+                                    </p>
+                                    <div className="overflow-x-auto">
+                                        <table className="min-w-full border-2 border-gray-300">
+                                            <thead>
+                                                <tr>
+                                                    <th className="border-2 border-gray-300 px-4 py-2 bg-gray-100" rowSpan="2" colSpan="2"></th>
+                                                    <th className="border-2 border-gray-300 px-4 py-2 bg-blue-100" colSpan="2">Predicted</th>
+                                                </tr>
+                                                <tr>
+                                                    <th className="border-2 border-gray-300 px-4 py-2 bg-blue-50">0 (No)</th>
+                                                    <th className="border-2 border-gray-300 px-4 py-2 bg-blue-50">1 (Yes)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <th className="border-2 border-gray-300 px-4 py-2 bg-green-100" rowSpan="2">Actual</th>
+                                                    <th className="border-2 border-gray-300 px-4 py-2 bg-green-50">0 (No)</th>
+                                                    <td className="border-2 border-gray-300 px-4 py-2 text-center bg-green-50 font-bold text-green-700">
+                                                        {results.confusionMatrix.trueNeg}
+                                                        <div className="text-xs font-normal text-gray-600">True Negative</div>
+                                                    </td>
+                                                    <td className="border-2 border-gray-300 px-4 py-2 text-center bg-red-50 font-bold text-red-700">
+                                                        {results.confusionMatrix.falsePos}
+                                                        <div className="text-xs font-normal text-gray-600">False Positive</div>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <th className="border-2 border-gray-300 px-4 py-2 bg-green-50">1 (Yes)</th>
+                                                    <td className="border-2 border-gray-300 px-4 py-2 text-center bg-red-50 font-bold text-red-700">
+                                                        {results.confusionMatrix.falseNeg}
+                                                        <div className="text-xs font-normal text-gray-600">False Negative</div>
+                                                    </td>
+                                                    <td className="border-2 border-gray-300 px-4 py-2 text-center bg-green-50 font-bold text-green-700">
+                                                        {results.confusionMatrix.truePos}
+                                                        <div className="text-xs font-normal text-gray-600">True Positive</div>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div className="mt-4 grid md:grid-cols-2 gap-4">
+                                        <div className="p-4 bg-blue-50 border-l-4 border-blue-500">
+                                            <h3 className="font-bold text-blue-900 mb-2">Accuracy</h3>
+                                            <p className="text-sm text-gray-700">
+                                                (TP + TN) / Total = ({results.confusionMatrix.truePos} + {results.confusionMatrix.trueNeg}) / {results.n} = {(results.accuracy * 100).toFixed(1)}%
+                                            </p>
+                                            <p className="text-xs text-gray-600 mt-1">Overall correct predictions</p>
+                                        </div>
+                                        <div className="p-4 bg-purple-50 border-l-4 border-purple-500">
+                                            <h3 className="font-bold text-purple-900 mb-2">Precision</h3>
+                                            <p className="text-sm text-gray-700">
+                                                TP / (TP + FP) = {results.confusionMatrix.truePos} / ({results.confusionMatrix.truePos} + {results.confusionMatrix.falsePos}) = {(results.precision * 100).toFixed(1)}%
+                                            </p>
+                                            <p className="text-xs text-gray-600 mt-1">Of predicted Yes, how many were actually Yes</p>
+                                        </div>
+                                        <div className="p-4 bg-green-50 border-l-4 border-green-500">
+                                            <h3 className="font-bold text-green-900 mb-2">Recall (Sensitivity)</h3>
+                                            <p className="text-sm text-gray-700">
+                                                TP / (TP + FN) = {results.confusionMatrix.truePos} / ({results.confusionMatrix.truePos} + {results.confusionMatrix.falseNeg}) = {(results.recall * 100).toFixed(1)}%
+                                            </p>
+                                            <p className="text-xs text-gray-600 mt-1">Of actual Yes, how many were predicted Yes</p>
+                                        </div>
+                                        <div className="p-4 bg-orange-50 border-l-4 border-orange-500">
+                                            <h3 className="font-bold text-orange-900 mb-2">F1 Score</h3>
+                                            <p className="text-sm text-gray-700">
+                                                2 * (Precision * Recall) / (Precision + Recall) = {results.f1Score.toFixed(3)}
+                                            </p>
+                                            <p className="text-xs text-gray-600 mt-1">Harmonic mean of precision and recall</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Coefficients and Odds Ratios */}
+                                <div className="bg-white rounded-lg shadow-md p-6">
+                                    <h2 className="text-2xl font-bold mb-4 text-gray-800">Coefficients and Odds Ratios</h2>
+                                    <p className="text-gray-600 mb-4">
+                                        Coefficients show the log-odds change. Odds ratios show the multiplicative change in odds.
+                                    </p>
+                                    <div className="overflow-x-auto">
+                                        <table className="min-w-full">
+                                            <thead className="bg-gray-100">
+                                                <tr>
+                                                    <th className="px-4 py-2 text-left">Variable</th>
+                                                    <th className="px-4 py-2 text-left">Coefficient</th>
+                                                    <th className="px-4 py-2 text-left">Std Error</th>
+                                                    <th className="px-4 py-2 text-left">z-statistic</th>
+                                                    <th className="px-4 py-2 text-left">P-value</th>
+                                                    <th className="px-4 py-2 text-left">Odds Ratio</th>
+                                                    <th className="px-4 py-2 text-left">Significant?</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {results.coefficients.map((coef, i) => (
+                                                    <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                                        <td className="px-4 py-2 font-semibold">{coef.name}</td>
+                                                        <td className="px-4 py-2">{coef.value.toFixed(4)}</td>
+                                                        <td className="px-4 py-2">{coef.se.toFixed(4)}</td>
+                                                        <td className="px-4 py-2">{coef.zStat.toFixed(3)}</td>
+                                                        <td className="px-4 py-2">{coef.pValue < 0.0001 ? '<0.0001' : coef.pValue.toFixed(4)}</td>
+                                                        <td className="px-4 py-2 font-bold text-blue-700">{coef.oddsRatio.toFixed(4)}</td>
+                                                        <td className="px-4 py-2">
+                                                            {coef.pValue < 0.05 ? (
+                                                                <span className="text-green-600 font-semibold">Yes</span>
+                                                            ) : (
+                                                                <span className="text-gray-500">No</span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                {/* Regression Equation */}
+                                <div className="bg-white rounded-lg shadow-md p-6">
+                                    <h2 className="text-2xl font-bold mb-4 text-gray-800">Logistic Regression Equation</h2>
+                                    <div className="bg-gray-100 rounded-lg p-4 mb-4">
+                                        <p className="font-mono text-sm mb-2">
+                                            <strong>Log-odds (logit):</strong>
+                                        </p>
+                                        <p className="font-mono text-sm overflow-x-auto">
+                                            log(p/(1-p)) = {results.coefficients[0].value.toFixed(4)}
+                                            {results.coefficients.slice(1).map((coef, i) => (
+                                                <span key={i}>
+                                                    {' '}{coef.value >= 0 ? '+' : ''} {coef.value.toFixed(4)} × {coef.name}
+                                                </span>
+                                            ))}
+                                        </p>
+                                    </div>
+                                    <div className="bg-gray-100 rounded-lg p-4 mb-4">
+                                        <p className="font-mono text-sm mb-2">
+                                            <strong>Probability:</strong>
+                                        </p>
+                                        <p className="font-mono text-sm">
+                                            p = 1 / (1 + exp(-(log-odds)))
+                                        </p>
+                                    </div>
+                                    <div className="mt-4 p-4 bg-teal-50 border-l-4 border-teal-500">
+                                        <h3 className="font-bold text-teal-900 mb-2">How to interpret odds ratios:</h3>
+                                        <ul className="text-sm text-gray-700 space-y-2">
+                                            {results.coefficients.slice(1).map((coef, i) => (
+                                                <li key={i}>
+                                                    <strong>{coef.name}:</strong> For every 1-unit increase in {coef.name},
+                                                    the odds of {results.headers[0]} = 1
+                                                    {coef.oddsRatio > 1
+                                                        ? ` multiply by ${coef.oddsRatio.toFixed(2)} (${((coef.oddsRatio - 1) * 100).toFixed(1)}% increase)`
+                                                        : coef.oddsRatio < 1
+                                                        ? ` multiply by ${coef.oddsRatio.toFixed(2)} (${((1 - coef.oddsRatio) * 100).toFixed(1)}% decrease)`
+                                                        : ' stay the same'}
+                                                    {coef.pValue < 0.05 ? ' (significant)' : ' (not significant)'}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                    <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500">
+                                        <h3 className="font-bold text-blue-900 mb-2">Odds Ratio Quick Reference:</h3>
+                                        <ul className="text-sm text-gray-700 space-y-1">
+                                            <li><strong>OR = 1:</strong> No effect (no change in odds)</li>
+                                            <li><strong>OR &gt; 1:</strong> Positive effect (increases odds)</li>
+                                            <li><strong>OR &lt; 1:</strong> Negative effect (decreases odds)</li>
+                                            <li><strong>OR = 2:</strong> Doubles the odds (100% increase)</li>
+                                            <li><strong>OR = 0.5:</strong> Halves the odds (50% decrease)</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                {/* Marketing Context Interpretation */}
+                                <div className="bg-white rounded-lg shadow-md p-6">
+                                    <h2 className="text-2xl font-bold mb-4 text-gray-800">Marketing Interpretation</h2>
+                                    <p className="text-gray-600 mb-4">
+                                        Understanding your customer purchase predictions:
+                                    </p>
+                                    <div className="space-y-3">
+                                        {results.coefficients.slice(1).map((coef, i) => {
+                                            const percentChange = coef.oddsRatio > 1
+                                                ? ((coef.oddsRatio - 1) * 100)
+                                                : ((1 - coef.oddsRatio) * 100);
+                                            const direction = coef.oddsRatio > 1 ? 'increase' : 'decrease';
+
+                                            return (
+                                                <div key={i} className={`p-4 rounded-lg ${coef.pValue < 0.05 ? 'bg-green-50 border-l-4 border-green-500' : 'bg-gray-50 border-l-4 border-gray-300'}`}>
+                                                    <h3 className="font-bold text-gray-900 mb-1">{coef.name}</h3>
+                                                    <p className="text-sm text-gray-700">
+                                                        Each additional unit of {coef.name.toLowerCase()} is associated with a <strong>{percentChange.toFixed(1)}% {direction}</strong> in the odds of purchase.
+                                                        {coef.pValue < 0.05
+                                                            ? ' This is statistically significant - a reliable predictor.'
+                                                            : ' This is not statistically significant - may not be a reliable predictor.'}
+                                                    </p>
+                                                    {coef.pValue < 0.05 && (
+                                                        <p className="text-xs text-green-700 mt-2">
+                                                            Action: Consider {coef.oddsRatio > 1 ? 'increasing' : 'monitoring'} this factor to improve conversion.
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Interpretation Guide */}
+                                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg shadow-md p-6 border-2 border-purple-200">
+                                    <h2 className="text-2xl font-bold mb-4 text-purple-900">How to Interpret Results</h2>
+                                    <div className="space-y-4 text-gray-700">
+                                        <div>
+                                            <h3 className="font-bold text-purple-800 mb-2">1. Check Model Fit</h3>
+                                            <p className="text-sm">McFadden's R-squared: 0.2-0.4 is considered excellent. Higher accuracy is better.</p>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-purple-800 mb-2">2. Review Confusion Matrix</h3>
+                                            <p className="text-sm">Look at precision and recall based on your goals. High precision = fewer false alarms. High recall = catch more positives.</p>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-purple-800 mb-2">3. Interpret Odds Ratios</h3>
+                                            <p className="text-sm">OR &gt; 1 means predictor increases odds. OR &lt; 1 means predictor decreases odds. Look at p-values for significance.</p>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-purple-800 mb-2">4. Apply to Business Decisions</h3>
+                                            <p className="text-sm">Use significant predictors to identify high-value customers and optimize marketing strategies.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Back Button */}
+                        <div className="mt-8 text-center">
+                            <a href="../index.html" className="text-teal-600 hover:text-teal-800 font-semibold">
+                                Back to Calculator Collection
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<LogisticRegressionCalculator />, document.getElementById('root'));
+    </script>
+</body>
+</html>

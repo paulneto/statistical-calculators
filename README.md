@@ -6,7 +6,7 @@ A comprehensive collection of web-based statistical calculators designed for mar
 
 ## Overview
 
-This repository contains 12 different statistical calculators, each designed to handle specific types of statistical analyses commonly used in marketing research, A/B testing, and data science. All calculators have been mathematically verified and include effect sizes, confidence intervals, and exact p-values.
+This repository contains 18 different statistical calculators and reference guides, each designed to handle specific types of statistical analyses commonly used in marketing research, A/B testing, and data science. All calculators have been mathematically verified and include effect sizes, confidence intervals, and exact p-values.
 
 ## Calculators
 
@@ -241,10 +241,10 @@ This repository contains 12 different statistical calculators, each designed to 
 
 ---
 
-### 12. Stats Cheatsheet 📚 NEW
+### 12. Stats Cheatsheet 📚
 **Location:** `cheatsheet.html`
 
-**Description:** Student-friendly guide to all statistical tests with casual, accessible language for 3rd year marketing students.
+**Description:** Professional guide to all statistical tests with accessible language for marketing research and data analysis.
 
 **Features:**
 - Quick reference for 8 major statistical tests
@@ -264,6 +264,160 @@ This repository contains 12 different statistical calculators, each designed to 
 - Quick test selection reference
 - Learning statistical concepts
 - Understanding when to use each test
+
+---
+
+### 13. Python Cheatsheet 🐍 NEW
+**Location:** `python_cheatsheet.html`
+
+**Description:** Copy-paste ready Python code examples for all statistical tests with complete imports and marketing-focused examples.
+
+**Features:**
+- **8 complete Python examples** with all imports
+- Copy-to-clipboard functionality for every code block
+- Syntax highlighting using Prism.js
+- Real marketing research examples (email campaigns, A/B tests, customer segmentation)
+- Uses standard libraries: numpy, scipy, pandas, statsmodels
+- Detailed comments throughout code
+- Self-contained, ready-to-run examples
+
+**Covers:**
+- T-Test, ANOVA, Chi-Square, Correlation, Linear Regression, Mann-Whitney, Proportions, Logistic Regression
+
+**Use Cases:**
+- Quick Python reference
+- Learning statistical programming
+- Copy-paste code for analysis
+- Understanding Python statistical libraries
+
+---
+
+### 14. Multiple Regression Calculator ✨ NEW
+**Location:** `multiple-regression/`
+
+**Description:** Predict outcomes using multiple predictor variables with comprehensive coefficient analysis and multicollinearity diagnostics.
+
+**Features:**
+- **Matrix algebra implementation** (β = (X'X)⁻¹X'y)
+- Multiple predictor variables support
+- Full coefficient table with:
+  - Coefficients and standard errors
+  - t-statistics and p-values
+  - Significance indicators
+- **VIF (Variance Inflation Factor)** for multicollinearity detection
+- R-squared and Adjusted R-squared
+- F-statistic for overall model significance
+- Regression equation display
+- Pre-loaded marketing example (ad spend analysis)
+
+**Use Cases:**
+- Sales forecasting with multiple factors
+- Marketing mix modeling
+- Understanding driver contribution
+- Multivariate prediction models
+
+---
+
+### 15. Post-Hoc Tests Calculator ✨ NEW
+**Location:** `posthoc-tests/`
+
+**Description:** Pairwise comparison tests for identifying specific group differences after significant ANOVA results.
+
+**Features:**
+- **Tukey HSD (Honestly Significant Difference)** test
+- **Bonferroni correction** for multiple comparisons
+- Complete pairwise comparison table with:
+  - Mean differences
+  - Test statistics (q or t)
+  - P-values (adjusted for Bonferroni)
+  - Significance indicators
+- Group summary statistics
+- MSE and degrees of freedom calculations
+- Pre-loaded marketing channel example
+
+**Use Cases:**
+- Follow-up analysis after ANOVA
+- Identifying which specific groups differ
+- Marketing channel performance comparisons
+- Campaign variation analysis
+
+---
+
+### 16. Logistic Regression Calculator ✨ NEW
+**Location:** `logistic-regression/`
+
+**Description:** Binary outcome prediction with odds ratios, confusion matrix, and comprehensive classification metrics.
+
+**Features:**
+- **Newton-Raphson iterative method** for maximum likelihood estimation
+- Binary outcome modeling (0/1, Yes/No)
+- Coefficient table with:
+  - Coefficients and standard errors
+  - z-statistics and p-values
+  - **Odds ratios** with interpretations
+- **Confusion matrix** (True Positives, False Positives, etc.)
+- Classification metrics:
+  - Accuracy, Precision, Recall, F1 Score
+- **McFadden's pseudo R-squared**
+- Pre-loaded customer conversion example
+
+**Use Cases:**
+- Customer conversion prediction
+- Churn modeling
+- Click-through rate prediction
+- Binary classification problems
+
+---
+
+### 17. Sample Size Calculator ✨ NEW
+**Location:** `sample-size/`
+
+**Description:** Determine required sample sizes for adequate statistical power across multiple test types.
+
+**Features:**
+- **4 test types supported:**
+  1. T-Test (two-sample means)
+  2. Proportions (two-sample proportions)
+  3. Correlation (Pearson's r)
+  4. ANOVA (multiple groups)
+- Effect size guidance (small/medium/large for each test)
+- Power level specification (default: 0.80)
+- Significance level specification (default: 0.05)
+- Power curve visualization
+- Detailed sample size recommendations
+
+**Use Cases:**
+- A/B test planning
+- Experiment design
+- Budget planning for research
+- Ensuring adequate statistical power
+
+---
+
+### 18. Cluster Analysis Calculator ✨ NEW
+**Location:** `cluster-analysis/`
+
+**Description:** K-means clustering for customer segmentation with elbow plot and comprehensive cluster analysis.
+
+**Features:**
+- **K-means algorithm** implementation (Lloyd's method)
+- Multiple cluster support (2-10 clusters)
+- Multi-feature analysis
+- Cluster assignment table with:
+  - Customer IDs
+  - Cluster assignments
+  - Feature values
+- **WCSS (Within-Cluster Sum of Squares)** analysis
+- Elbow plot data for optimal k selection
+- Cluster centroids display
+- Marketing interpretation guide
+- Pre-loaded customer data example
+
+**Use Cases:**
+- Customer segmentation
+- Market segmentation
+- Behavioral grouping
+- Targeting strategy development
 
 ---
 
@@ -311,6 +465,9 @@ Requires internet connection for CDN-loaded libraries (React, Tailwind CSS, jSta
 
 ```
 calculators/
+├── index.html                          # Main dashboard
+├── cheatsheet.html                     # Stats reference guide
+├── python_cheatsheet.html              # Python code examples
 ├── anova/
 │   ├── index.html
 │   └── anova-calculator.html
@@ -333,9 +490,21 @@ calculators/
 ├── power analysis/
 │   └── power-analysis-calculator.html
 ├── regression/
-│   └── correlation-regression-html2.html
-└── proportion sig/
-    └── z proportion-calculator %.html
+│   └── simple-linear-regression.html
+├── proportion sig/
+│   └── z proportion-calculator %.html
+├── bayesian/
+│   └── bayesian_interactive.html
+├── multiple-regression/               # NEW
+│   └── index.html
+├── posthoc-tests/                     # NEW
+│   └── index.html
+├── logistic-regression/               # NEW
+│   └── index.html
+├── sample-size/                       # NEW
+│   └── index.html
+└── cluster-analysis/                  # NEW
+    └── index.html
 ```
 
 ## Common Statistical Terms

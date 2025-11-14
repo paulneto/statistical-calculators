@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sample Size Calculator</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen py-12">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const SampleSizeCalculator = () => {
+            const [testType, setTestType] = React.useState('t-test');
+            const [effectSize, setEffectSize] = React.useState('0.5');
+            const [power, setPower] = React.useState('0.80');
+            const [alpha, setAlpha] = React.useState('0.05');
+            const [ratio, setRatio] = React.useState('1');
+            const [proportion1, setProportion1] = React.useState('0.5');
+            const [proportion2, setProportion2] = React.useState('0.6');
+            const [numGroups, setNumGroups] = React.useState('3');
+            const [showPowerCurve, setShowPowerCurve] = React.useState(false);
+
+            // Calculate sample size for independent samples t-test
+            const calculateTTestSampleSize = (d, pow, alph, r) => {
+                const effectSize = parseFloat(d);
+                const powerLevel = parseFloat(pow);
+                const alphaLevel = parseFloat(alph);
+                const allocationRatio = parseFloat(r);
+
+                // Using the formula: n = (Z_alpha + Z_beta)^2 * (1 + 1/r) / d^2
+                // where Z_alpha is the critical value for alpha (two-tailed)
+                // and Z_beta is the critical value for power (1 - beta)
+
+                const zAlpha = jStat.normal.inv(1 - alphaLevel / 2, 0, 1);
+                const zBeta = jStat.normal.inv(powerLevel, 0, 1);
+
+                // For t-test (more accurate with t-distribution)
+                // Iterative approach for better accuracy
+                let n1 = Math.ceil(((zAlpha + zBeta) ** 2 * (1 + 1/allocationRatio)) / (effectSize ** 2));
+
+                // Refinement using non-central t-distribution (if available)
+                if (typeof jStat.noncentralt !== 'undefined') {
+                    for (let i = 0; i < 10; i++) {
+                        const df = n1 + n1/allocationRatio - 2;
+                        const tAlpha = jStat.studentt.inv(1 - alphaLevel / 2, df);
+                        const ncp = effectSize * Math.sqrt(n1 * allocationRatio / (1 + allocationRatio));
+
+                        try {
+                            const actualPower = 1 - jStat.noncentralt.cdf(tAlpha, df, ncp) +
+                                               jStat.noncentralt.cdf(-tAlpha, df, ncp);
+
+                            if (Math.abs(actualPower - powerLevel) < 0.001) break;
+
+                            if (actualPower < powerLevel) {
+                                n1 += 1;
+                            } else {
+                                break;
+                            }
+                        } catch (e) {
+                            // Fall back to normal approximation if error occurs
+                            break;
+                        }
+                    }
+                }
+
+                const n2 = Math.ceil(n1 / allocationRatio);
+                const totalN = n1 + n2;
+
+                return { n1, n2, totalN, perGroup: n1 };
+            };
+
+            // Calculate sample size for proportions test
+            const calculateProportionsSampleSize = (p1, p2, pow, alph, r) => {
+                const prop1 = parseFloat(p1);
+                const prop2 = parseFloat(p2);
+                const powerLevel = parseFloat(pow);
+                const alphaLevel = parseFloat(alph);
+                const allocationRatio = parseFloat(r);
+
+                const zAlpha = jStat.normal.inv(1 - alphaLevel / 2, 0, 1);
+                const zBeta = jStat.normal.inv(powerLevel, 0, 1);
+
+                // Pooled proportion for sample size calculation
+                const pBar = (prop1 + prop2) / 2;
+                const delta = Math.abs(prop1 - prop2);
+
+                // Formula for two proportions
+                const numerator = (zAlpha * Math.sqrt(2 * pBar * (1 - pBar)) +
+                                  zBeta * Math.sqrt(prop1 * (1 - prop1) + prop2 * (1 - prop2))) ** 2;
+                const denominator = delta ** 2;
+
+                let n1 = Math.ceil(numerator / denominator);
+                const n2 = Math.ceil(n1 / allocationRatio);
+                const totalN = n1 + n2;
+
+                return { n1, n2, totalN, perGroup: n1 };
+            };
+
+            // Calculate sample size for correlation
+            const calculateCorrelationSampleSize = (r, pow, alph) => {
+                const correlation = parseFloat(r);
+                const powerLevel = parseFloat(pow);
+                const alphaLevel = parseFloat(alph);
+
+                const zAlpha = jStat.normal.inv(1 - alphaLevel / 2, 0, 1);
+                const zBeta = jStat.normal.inv(powerLevel, 0, 1);
+
+                // Fisher's z-transformation
+                const zr = 0.5 * Math.log((1 + correlation) / (1 - correlation));
+
+                // Sample size formula using Fisher's z
+                const n = Math.ceil(((zAlpha + zBeta) / zr) ** 2 + 3);
+
+                return { n, totalN: n, perGroup: n };
+            };
+
+            // Calculate sample size for ANOVA
+            // Note: Uses approximation for non-central F distribution
+            const calculateAnovaSampleSize = (f, pow, alph, k) => {
+                const effectSizeF = parseFloat(f);
+                const powerLevel = parseFloat(pow);
+                const alphaLevel = parseFloat(alph);
+                const groups = parseInt(k);
+
+                // Using iterative approach with improved approximation
+                let nPerGroup = Math.max(5, Math.ceil(20 / (effectSizeF ** 2))); // Better starting value
+
+                for (let i = 0; i < 1000; i++) {
+                    const dfBetween = groups - 1;
+                    const dfWithin = groups * (nPerGroup - 1);
+                    const totalN = groups * nPerGroup;
+
+                    // Non-centrality parameter for Cohen's f
+                    // λ = N × f² where N is total sample size
+                    const lambda = totalN * (effectSizeF ** 2);
+
+                    // Critical F-value
+                    const fCrit = jStat.centralF.inv(1 - alphaLevel, dfBetween, dfWithin);
+
+                    // Patnaik approximation for non-central F power
+                    // Approximates non-central F with central F using adjusted df
+                    const h = dfWithin / (dfWithin + lambda);
+                    const dfAdj = dfBetween * h;
+                    const fScaled = fCrit * h;
+
+                    // Power approximation
+                    const approximatePower = 1 - jStat.centralF.cdf(fScaled, dfAdj, dfWithin);
+
+                    if (approximatePower >= powerLevel) {
+                        break;
+                    }
+
+                    nPerGroup++;
+
+                    // Safety check
+                    if (nPerGroup > 10000) {
+                        console.warn('Sample size calculation did not converge');
+                        break;
+                    }
+                }
+
+                const totalN = groups * nPerGroup;
+
+                return { perGroup: nPerGroup, totalN, groups };
+            };
+
+            // Calculate results based on test type
+            const calculateSampleSize = () => {
+                switch (testType) {
+                    case 't-test':
+                        return calculateTTestSampleSize(effectSize, power, alpha, ratio);
+                    case 'proportions':
+                        return calculateProportionsSampleSize(proportion1, proportion2, power, alpha, ratio);
+                    case 'correlation':
+                        return calculateCorrelationSampleSize(effectSize, power, alpha);
+                    case 'anova':
+                        return calculateAnovaSampleSize(effectSize, power, alpha, numGroups);
+                    default:
+                        return null;
+                }
+            };
+
+            // Generate power curve data
+            const generatePowerCurve = () => {
+                const sampleSizes = [10, 20, 30, 50, 75, 100, 150, 200];
+                const powerLevels = sampleSizes.map(n => {
+                    const alph = parseFloat(alpha);
+                    const es = parseFloat(effectSize);
+
+                    if (testType === 't-test') {
+                        const df = 2 * n - 2;
+                        const tAlpha = jStat.studentt.inv(1 - alph / 2, df);
+                        const ncp = es * Math.sqrt(n / 2);
+                        try {
+                            if (typeof jStat.noncentralt !== 'undefined') {
+                                const pow = 1 - jStat.noncentralt.cdf(tAlpha, df, ncp) +
+                                           jStat.noncentralt.cdf(-tAlpha, df, ncp);
+                                return Math.min(1, Math.max(0, pow));
+                            }
+                        } catch (e) {
+                            // Fall through to normal approximation
+                        }
+                        // Normal approximation fallback
+                        const zBeta = ncp - tAlpha;
+                        return Math.min(1, Math.max(0, jStat.normal.cdf(zBeta, 0, 1)));
+                    } else if (testType === 'correlation') {
+                        const zAlpha = jStat.normal.inv(1 - alph / 2, 0, 1);
+                        const zr = 0.5 * Math.log((1 + es) / (1 - es));
+                        const se = 1 / Math.sqrt(n - 3);
+                        const zBeta = zr / se - zAlpha;
+                        const pow = jStat.normal.cdf(zBeta, 0, 1);
+                        return Math.min(1, Math.max(0, pow));
+                    }
+
+                    return 0.5; // placeholder for other types
+                });
+
+                return sampleSizes.map((n, i) => ({ n, power: powerLevels[i] }));
+            };
+
+            const results = calculateSampleSize();
+            const powerCurveData = showPowerCurve ? generatePowerCurve() : [];
+
+            // Effect size interpretations
+            const getEffectSizeInterpretation = () => {
+                const es = parseFloat(effectSize);
+                if (testType === 't-test') {
+                    if (es < 0.2) return "Very Small (d < 0.2)";
+                    if (es < 0.5) return "Small (d = 0.2)";
+                    if (es < 0.8) return "Medium (d = 0.5)";
+                    return "Large (d = 0.8+)";
+                } else if (testType === 'anova') {
+                    if (es < 0.1) return "Very Small (f < 0.1)";
+                    if (es < 0.25) return "Small (f = 0.1)";
+                    if (es < 0.4) return "Medium (f = 0.25)";
+                    return "Large (f = 0.4+)";
+                } else if (testType === 'correlation') {
+                    if (Math.abs(es) < 0.1) return "Very Small (r < 0.1)";
+                    if (Math.abs(es) < 0.3) return "Small (r = 0.1)";
+                    if (Math.abs(es) < 0.5) return "Medium (r = 0.3)";
+                    return "Large (r = 0.5+)";
+                }
+                return "";
+            };
+
+            // Preset scenarios
+            const presetScenarios = {
+                't-test': [
+                    { name: "Small Effect", effectSize: "0.2", power: "0.80", alpha: "0.05" },
+                    { name: "Medium Effect", effectSize: "0.5", power: "0.80", alpha: "0.05" },
+                    { name: "Large Effect", effectSize: "0.8", power: "0.80", alpha: "0.05" },
+                    { name: "High Power", effectSize: "0.5", power: "0.95", alpha: "0.05" }
+                ],
+                'proportions': [
+                    { name: "10% Difference", proportion1: "0.5", proportion2: "0.6", power: "0.80", alpha: "0.05" },
+                    { name: "20% Difference", proportion1: "0.4", proportion2: "0.6", power: "0.80", alpha: "0.05" },
+                    { name: "Conservative", proportion1: "0.5", proportion2: "0.55", power: "0.90", alpha: "0.05" }
+                ],
+                'correlation': [
+                    { name: "Small r=0.1", effectSize: "0.1", power: "0.80", alpha: "0.05" },
+                    { name: "Medium r=0.3", effectSize: "0.3", power: "0.80", alpha: "0.05" },
+                    { name: "Large r=0.5", effectSize: "0.5", power: "0.80", alpha: "0.05" }
+                ],
+                'anova': [
+                    { name: "Small f=0.1", effectSize: "0.1", power: "0.80", alpha: "0.05", numGroups: "3" },
+                    { name: "Medium f=0.25", effectSize: "0.25", power: "0.80", alpha: "0.05", numGroups: "3" },
+                    { name: "Large f=0.4", effectSize: "0.4", power: "0.80", alpha: "0.05", numGroups: "3" }
+                ]
+            };
+
+            const applyPreset = (preset) => {
+                if (preset.effectSize) setEffectSize(preset.effectSize);
+                if (preset.power) setPower(preset.power);
+                if (preset.alpha) setAlpha(preset.alpha);
+                if (preset.proportion1) setProportion1(preset.proportion1);
+                if (preset.proportion2) setProportion2(preset.proportion2);
+                if (preset.numGroups) setNumGroups(preset.numGroups);
+            };
+
+            return (
+                <div className="w-full max-w-4xl mx-auto bg-white rounded-lg shadow p-6">
+                    <div className="mb-6">
+                        <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent">
+                            Sample Size Calculator
+                        </h1>
+                        <p className="text-gray-600 mt-2">
+                            Determine the required sample size for your statistical test
+                        </p>
+                    </div>
+
+                    <div className="mb-6">
+                        <h3 className="font-medium mb-2">Select Test Type</h3>
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                onClick={() => setTestType('t-test')}
+                                className={`px-4 py-2 rounded ${
+                                    testType === 't-test'
+                                    ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white'
+                                    : 'bg-gray-200'
+                                }`}
+                            >
+                                T-Test
+                            </button>
+                            <button
+                                onClick={() => setTestType('proportions')}
+                                className={`px-4 py-2 rounded ${
+                                    testType === 'proportions'
+                                    ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white'
+                                    : 'bg-gray-200'
+                                }`}
+                            >
+                                Proportions
+                            </button>
+                            <button
+                                onClick={() => setTestType('correlation')}
+                                className={`px-4 py-2 rounded ${
+                                    testType === 'correlation'
+                                    ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white'
+                                    : 'bg-gray-200'
+                                }`}
+                            >
+                                Correlation
+                            </button>
+                            <button
+                                onClick={() => setTestType('anova')}
+                                className={`px-4 py-2 rounded ${
+                                    testType === 'anova'
+                                    ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white'
+                                    : 'bg-gray-200'
+                                }`}
+                            >
+                                ANOVA
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="mb-6">
+                        <h3 className="font-medium mb-2">Preset Scenarios</h3>
+                        <div className="flex flex-wrap gap-2">
+                            {presetScenarios[testType].map((preset, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => applyPreset(preset)}
+                                    className="px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 text-sm"
+                                >
+                                    {preset.name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-6 mb-6">
+                        {testType === 'proportions' ? (
+                            <>
+                                <div>
+                                    <label className="block font-medium mb-2">
+                                        Proportion 1 (p1)
+                                        <span className="text-sm text-gray-500 ml-2">e.g., 0.5 = 50%</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        max="1"
+                                        value={proportion1}
+                                        onChange={(e) => setProportion1(e.target.value)}
+                                        className="w-full border rounded p-2"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block font-medium mb-2">
+                                        Proportion 2 (p2)
+                                        <span className="text-sm text-gray-500 ml-2">e.g., 0.6 = 60%</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        max="1"
+                                        value={proportion2}
+                                        onChange={(e) => setProportion2(e.target.value)}
+                                        className="w-full border rounded p-2"
+                                    />
+                                    <div className="mt-2 text-sm text-gray-600">
+                                        Difference: {Math.abs(parseFloat(proportion2) - parseFloat(proportion1)).toFixed(2)}
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div>
+                                <label className="block font-medium mb-2">
+                                    Effect Size
+                                    {testType === 't-test' && <span className="text-sm text-gray-500 ml-2">(Cohen's d)</span>}
+                                    {testType === 'correlation' && <span className="text-sm text-gray-500 ml-2">(r)</span>}
+                                    {testType === 'anova' && <span className="text-sm text-gray-500 ml-2">(f)</span>}
+                                </label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    value={effectSize}
+                                    onChange={(e) => setEffectSize(e.target.value)}
+                                    className="w-full border rounded p-2"
+                                />
+                                <div className="mt-2 text-sm text-pink-600">
+                                    {getEffectSizeInterpretation()}
+                                </div>
+                            </div>
+                        )}
+
+                        <div>
+                            <label className="block font-medium mb-2">
+                                Statistical Power (1 - β)
+                                <span className="text-sm text-gray-500 ml-2">Default: 0.80</span>
+                            </label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0.5"
+                                max="0.99"
+                                value={power}
+                                onChange={(e) => setPower(e.target.value)}
+                                className="w-full border rounded p-2"
+                            />
+                            <div className="mt-2 text-sm text-gray-600">
+                                {(parseFloat(power) * 100).toFixed(0)}% chance of detecting a real effect
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block font-medium mb-2">
+                                Significance Level (α)
+                                <span className="text-sm text-gray-500 ml-2">Default: 0.05</span>
+                            </label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0.01"
+                                max="0.1"
+                                value={alpha}
+                                onChange={(e) => setAlpha(e.target.value)}
+                                className="w-full border rounded p-2"
+                            />
+                            <div className="mt-2 text-sm text-gray-600">
+                                {(parseFloat(alpha) * 100).toFixed(0)}% chance of false positive
+                            </div>
+                        </div>
+
+                        {(testType === 't-test' || testType === 'proportions') && (
+                            <div>
+                                <label className="block font-medium mb-2">
+                                    Allocation Ratio (n1/n2)
+                                    <span className="text-sm text-gray-500 ml-2">1 = equal groups</span>
+                                </label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    min="0.5"
+                                    max="3"
+                                    value={ratio}
+                                    onChange={(e) => setRatio(e.target.value)}
+                                    className="w-full border rounded p-2"
+                                />
+                            </div>
+                        )}
+
+                        {testType === 'anova' && (
+                            <div>
+                                <label className="block font-medium mb-2">
+                                    Number of Groups
+                                </label>
+                                <input
+                                    type="number"
+                                    min="2"
+                                    max="10"
+                                    value={numGroups}
+                                    onChange={(e) => setNumGroups(e.target.value)}
+                                    className="w-full border rounded p-2"
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    {results && (
+                        <div className="mt-6 p-6 bg-gradient-to-r from-pink-50 to-rose-50 rounded-lg border-2 border-pink-200">
+                            <h3 className="font-bold text-lg mb-4 text-pink-700">Required Sample Size</h3>
+                            <div className="grid md:grid-cols-3 gap-4">
+                                {testType === 'correlation' ? (
+                                    <div className="p-4 bg-white rounded shadow">
+                                        <div className="text-sm text-gray-600">Total Sample Size</div>
+                                        <div className="text-3xl font-bold text-pink-600">{results.n}</div>
+                                        <div className="text-xs text-gray-500 mt-1">observations needed</div>
+                                    </div>
+                                ) : testType === 'anova' ? (
+                                    <>
+                                        <div className="p-4 bg-white rounded shadow">
+                                            <div className="text-sm text-gray-600">Per Group</div>
+                                            <div className="text-3xl font-bold text-pink-600">{results.perGroup}</div>
+                                            <div className="text-xs text-gray-500 mt-1">in each of {results.groups} groups</div>
+                                        </div>
+                                        <div className="p-4 bg-white rounded shadow">
+                                            <div className="text-sm text-gray-600">Total Sample Size</div>
+                                            <div className="text-3xl font-bold text-rose-600">{results.totalN}</div>
+                                            <div className="text-xs text-gray-500 mt-1">all groups combined</div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="p-4 bg-white rounded shadow">
+                                            <div className="text-sm text-gray-600">Group 1</div>
+                                            <div className="text-3xl font-bold text-pink-600">{results.n1}</div>
+                                            <div className="text-xs text-gray-500 mt-1">participants</div>
+                                        </div>
+                                        <div className="p-4 bg-white rounded shadow">
+                                            <div className="text-sm text-gray-600">Group 2</div>
+                                            <div className="text-3xl font-bold text-pink-600">{results.n2}</div>
+                                            <div className="text-xs text-gray-500 mt-1">participants</div>
+                                        </div>
+                                        <div className="p-4 bg-white rounded shadow">
+                                            <div className="text-sm text-gray-600">Total</div>
+                                            <div className="text-3xl font-bold text-rose-600">{results.totalN}</div>
+                                            <div className="text-xs text-gray-500 mt-1">participants</div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {results && (
+                        <div className="mt-6 p-4 bg-blue-50 rounded border border-blue-200">
+                            <h4 className="font-medium text-blue-900 mb-2">Interpretation</h4>
+                            <div className="text-sm text-gray-700 space-y-2">
+                                {testType === 't-test' && (
+                                    <p>
+                                        For a two-sample t-test with <strong>Cohen's d = {effectSize}</strong> ({getEffectSizeInterpretation().split('(')[0]}effect),{' '}
+                                        <strong>{(parseFloat(power) * 100).toFixed(0)}% power</strong>, and{' '}
+                                        <strong>α = {alpha}</strong>, you need <strong>{results.perGroup} participants per group</strong>{' '}
+                                        ({results.totalN} total).
+                                    </p>
+                                )}
+                                {testType === 'proportions' && (
+                                    <p>
+                                        To detect a difference between proportions of <strong>{proportion1}</strong> and <strong>{proportion2}</strong>{' '}
+                                        (difference = {Math.abs(parseFloat(proportion2) - parseFloat(proportion1)).toFixed(2)}), with{' '}
+                                        <strong>{(parseFloat(power) * 100).toFixed(0)}% power</strong> and <strong>α = {alpha}</strong>,{' '}
+                                        you need <strong>{results.n1} participants in group 1</strong> and{' '}
+                                        <strong>{results.n2} in group 2</strong> ({results.totalN} total).
+                                    </p>
+                                )}
+                                {testType === 'correlation' && (
+                                    <p>
+                                        To detect a correlation of <strong>r = {effectSize}</strong> ({getEffectSizeInterpretation().split('(')[0]}effect){' '}
+                                        with <strong>{(parseFloat(power) * 100).toFixed(0)}% power</strong> and <strong>α = {alpha}</strong>,{' '}
+                                        you need <strong>{results.n} observations</strong>.
+                                    </p>
+                                )}
+                                {testType === 'anova' && (
+                                    <>
+                                        <p>
+                                            For a one-way ANOVA with <strong>{numGroups} groups</strong>, effect size <strong>f = {effectSize}</strong>{' '}
+                                            ({getEffectSizeInterpretation().split('(')[0]}effect), <strong>{(parseFloat(power) * 100).toFixed(0)}% power</strong>,{' '}
+                                            and <strong>α = {alpha}</strong>, you need <strong>{results.perGroup} participants per group</strong>{' '}
+                                            ({results.totalN} total).
+                                        </p>
+                                        <p className="mt-3 text-sm text-amber-700 bg-amber-50 p-3 rounded border-l-4 border-amber-500">
+                                            <strong>Note:</strong> ANOVA sample sizes use the Patnaik approximation for non-central F distribution.
+                                            Results are close approximations. For critical studies, verify with specialized software (e.g., G*Power).
+                                        </p>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="mt-6">
+                        <button
+                            onClick={() => setShowPowerCurve(!showPowerCurve)}
+                            className="px-4 py-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded hover:from-pink-600 hover:to-rose-600"
+                        >
+                            {showPowerCurve ? 'Hide' : 'Show'} Power Curve
+                        </button>
+                    </div>
+
+                    {showPowerCurve && (testType === 't-test' || testType === 'correlation') && (
+                        <div className="mt-6 p-4 bg-gray-50 rounded">
+                            <h4 className="font-medium mb-4">Power Analysis Curve</h4>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b-2 border-gray-300">
+                                            <th className="text-left py-2">Sample Size (per group)</th>
+                                            <th className="text-left py-2">Statistical Power</th>
+                                            <th className="text-left py-2">Visual</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {powerCurveData.map((point, index) => {
+                                            const barWidth = Math.round(point.power * 100);
+                                            const isTarget = point.power >= parseFloat(power);
+                                            return (
+                                                <tr key={index} className={`border-b ${isTarget ? 'bg-pink-50' : ''}`}>
+                                                    <td className="py-2 font-medium">{point.n}</td>
+                                                    <td className="py-2">{(point.power * 100).toFixed(1)}%</td>
+                                                    <td className="py-2">
+                                                        <div className="w-full bg-gray-200 rounded h-4">
+                                                            <div
+                                                                className={`h-4 rounded ${isTarget ? 'bg-gradient-to-r from-pink-500 to-rose-500' : 'bg-gray-400'}`}
+                                                                style={{ width: `${barWidth}%` }}
+                                                            ></div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                                <div className="mt-2 text-xs text-gray-600">
+                                    Rows highlighted in pink meet or exceed the target power of {(parseFloat(power) * 100).toFixed(0)}%
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="mt-8 bg-gray-50 p-4 rounded">
+                        <h3 className="font-medium mb-4">Understanding Effect Sizes</h3>
+
+                        <div className="space-y-4">
+                            <div>
+                                <h4 className="font-medium text-pink-700">Cohen's d (T-Test)</h4>
+                                <ul className="list-disc ml-6 mt-2 text-sm space-y-1">
+                                    <li><strong>Small (d = 0.2):</strong> Subtle difference, like 0.2 standard deviations apart</li>
+                                    <li><strong>Medium (d = 0.5):</strong> Noticeable difference, visible to careful observer - requires ~64 per group for 80% power</li>
+                                    <li><strong>Large (d = 0.8):</strong> Obvious difference, clear to naked eye - requires ~26 per group for 80% power</li>
+                                </ul>
+                            </div>
+
+                            <div>
+                                <h4 className="font-medium text-pink-700">Proportions (Two Proportions Test)</h4>
+                                <ul className="list-disc ml-6 mt-2 text-sm space-y-1">
+                                    <li><strong>Small difference:</strong> 0.05-0.10 (5-10 percentage points) - e.g., 50% vs 55%</li>
+                                    <li><strong>Medium difference:</strong> 0.10-0.20 (10-20 percentage points) - e.g., 50% vs 60%</li>
+                                    <li><strong>Large difference:</strong> 0.20+ (20+ percentage points) - e.g., 50% vs 70%</li>
+                                </ul>
+                            </div>
+
+                            <div>
+                                <h4 className="font-medium text-pink-700">Correlation Coefficient (r)</h4>
+                                <ul className="list-disc ml-6 mt-2 text-sm space-y-1">
+                                    <li><strong>Small (r = 0.1):</strong> Weak relationship - requires ~783 observations for 80% power</li>
+                                    <li><strong>Medium (r = 0.3):</strong> Moderate relationship - requires ~84 observations for 80% power</li>
+                                    <li><strong>Large (r = 0.5):</strong> Strong relationship - requires ~29 observations for 80% power</li>
+                                </ul>
+                            </div>
+
+                            <div>
+                                <h4 className="font-medium text-pink-700">Cohen's f (ANOVA)</h4>
+                                <ul className="list-disc ml-6 mt-2 text-sm space-y-1">
+                                    <li><strong>Small (f = 0.1):</strong> Subtle group differences</li>
+                                    <li><strong>Medium (f = 0.25):</strong> Moderate group differences - standard benchmark</li>
+                                    <li><strong>Large (f = 0.4):</strong> Large group differences, clearly distinguishable</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 bg-gray-50 p-4 rounded">
+                        <h3 className="font-medium mb-4">Practical Recommendations</h3>
+                        <div className="text-sm text-gray-700 space-y-2">
+                            <p>
+                                <strong>Standard Settings:</strong> Most researchers use 80% power (β = 0.20) and α = 0.05.
+                                This means a 20% chance of missing a real effect and a 5% chance of a false positive.
+                            </p>
+                            <p>
+                                <strong>Conservative Approach:</strong> For critical decisions, consider 90% or 95% power,
+                                though this requires substantially larger samples.
+                            </p>
+                            <p>
+                                <strong>Resource Constraints:</strong> If sample size is limited, calculate what effect size
+                                you can reliably detect with your available sample. Smaller effects require much larger samples.
+                            </p>
+                            <p>
+                                <strong>Pilot Studies:</strong> Use pilot data to estimate realistic effect sizes for your
+                                main study. Published effects are often overestimated due to publication bias.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 bg-yellow-50 p-4 rounded border border-yellow-200">
+                        <h4 className="font-medium text-yellow-900 mb-2">Important Notes</h4>
+                        <ul className="list-disc ml-6 text-sm text-gray-700 space-y-1">
+                            <li>These calculations assume normally distributed data and two-tailed tests</li>
+                            <li>Actual power may vary based on data characteristics and test assumptions</li>
+                            <li>Consider dropout rates - increase sample size by 10-20% to account for attrition</li>
+                            <li>Unequal group sizes reduce power - equal allocation is most efficient</li>
+                            <li>For ANOVA, calculations assume balanced designs (equal n per group)</li>
+                        </ul>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<SampleSizeCalculator />, document.getElementById('root'));
+    </script>
+</body>
+</html>
