@@ -233,10 +233,22 @@
             })();
 
             return (
-                <div className="w-full max-w-4xl mx-auto bg-white rounded-lg shadow p-6">
-                    <div className="mb-6">
-                        <h1 className="text-2xl font-bold">Marketing Research T-Test Calculator</h1>
+                <div className="min-h-screen bg-gray-50">
+                    {/* Header */}
+                    <div style={{background: 'linear-gradient(to right, #8b5cf6, #7c3aed)'}} className="text-white shadow-lg">
+                        <div className="max-w-7xl mx-auto px-4 py-6">
+                            <div className="flex items-center justify-between mb-2">
+                                <h1 className="text-2xl font-bold text-white">T-Test Calculator</h1>
+                                <a href="../index.html" style={{backgroundColor: '#ffffff', color: '#8b5cf6'}} className="px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition text-sm">
+                                    ← Back to Calculators
+                                </a>
+                            </div>
+                            <p className="text-white text-sm font-medium">Compare means between two groups or against a known value</p>
+                        </div>
                     </div>
+
+                    <div className="max-w-4xl mx-auto px-4 py-8">
+                        <div className="bg-white rounded-lg shadow p-6">
 
                     <div className="mb-6">
                         <h3 className="font-medium mb-2">Select Test Type</h3>
@@ -467,6 +479,7 @@
                                     <li>For one-sample tests: The sample should be representative of the population.</li>
                                 </ul>
                             </div>
+                        </div>
                         </div>
                     </div>
                 </div>

@@ -83,7 +83,7 @@
         }
     </style>
 </head>
-<body class="bg-gray-50">
+<body>
     <div id="root"></div>
 
     <script type="text/babel">
@@ -172,10 +172,21 @@
             const [activeTab, setActiveTab] = useState('basics');
             
             return (
-                <div className="max-w-6xl mx-auto p-6 bg-gray-50 min-h-screen">
-                    <h1 className="text-3xl font-bold text-center mb-8 text-blue-700">
-                        Interactive Bayesian Theory Demo for Marketing Research
-                    </h1>
+                <div className="min-h-screen bg-gray-50">
+                    {/* Header */}
+                    <div style={{background: 'linear-gradient(to right, #9333ea, #7e22ce)'}} className="text-white shadow-lg">
+                        <div className="max-w-7xl mx-auto px-4 py-6">
+                            <div className="flex items-center justify-between mb-2">
+                                <h1 className="text-2xl font-bold text-white">Bayesian Theory Interactive Demo</h1>
+                                <a href="../index.html" style={{backgroundColor: '#ffffff', color: '#9333ea'}} className="px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition text-sm">
+                                    ← Back to Calculators
+                                </a>
+                            </div>
+                            <p className="text-white text-sm font-medium">Learn Bayesian statistics through interactive examples</p>
+                        </div>
+                    </div>
+
+                    <div className="max-w-6xl mx-auto px-4 py-8">
                     
                     <div className="mb-6">
                         <div className="flex flex-wrap justify-center gap-2">
@@ -209,6 +220,7 @@
                         {activeTab === 'realtime' && <RealTimeDemo />}
                     </div>
                 </div>
+            </div>
             );
         };
 
