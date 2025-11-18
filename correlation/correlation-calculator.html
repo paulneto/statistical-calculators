@@ -313,13 +313,17 @@ or
 
         // Hide back button when loaded in iframe (e.g., PWA wrapper)
         if (window.self !== window.top) {
-            // Wait for React to render
-            setTimeout(() => {
+            // Wait for React to render, then hide button
+            const hideBackButton = () => {
                 const backButton = document.getElementById('backButton');
                 if (backButton) {
                     backButton.style.display = 'none';
+                } else {
+                    // Try again if not found
+                    setTimeout(hideBackButton, 50);
                 }
-            }, 100);
+            };
+            setTimeout(hideBackButton, 100);
         }
     </script>
 </body>
