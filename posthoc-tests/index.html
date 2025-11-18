@@ -139,7 +139,7 @@ EmojiIncluded,16.8,17.5,15.9,18.2,16.4`;
                         <div className="max-w-7xl mx-auto px-4 py-6">
                             <div className="flex items-center justify-between mb-2">
                                 <h1 className="text-2xl font-bold text-white">Post-Hoc Tests Calculator</h1>
-                                <a href="../index.html" style={{backgroundColor: '#ffffff', color: '#a855f7'}} className="px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition text-sm">
+                                <a href="../index.html" id="backButton" style={{backgroundColor: '#ffffff', color: '#a855f7'}} className="px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition text-sm">
                                     ← Back to Calculators
                                 </a>
                             </div>
@@ -391,6 +391,17 @@ EmojiIncluded,16.8,17.5,15.9,18.2,16.4`;
         }
 
         ReactDOM.render(<PostHocCalculator />, document.getElementById('root'));
+
+        // Hide back button when loaded in iframe (e.g., PWA wrapper)
+        if (window.self !== window.top) {
+            // Wait for React to render
+            setTimeout(() => {
+                const backButton = document.getElementById('backButton');
+                if (backButton) {
+                    backButton.style.display = 'none';
+                }
+            }, 100);
+        }
     </script>
 </body>
 </html>

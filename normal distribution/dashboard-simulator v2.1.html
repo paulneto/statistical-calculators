@@ -371,7 +371,7 @@
     <div style="max-width: 100%; margin: 0 auto; padding: 24px 20px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
         <h1 style="font-size: 24px; font-weight: bold; color: white; margin: 0; padding: 0; border: none; text-align: left;">Normal Distribution Dashboard</h1>
-        <a href="../index.html" style="background-color: #ffffff; color: #8b5cf6; padding: 8px 16px; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 14px; display: inline-block; transition: background-color 0.2s;">
+        <a href="../index.html" id="backButton" style="background-color: #ffffff; color: #8b5cf6; padding: 8px 16px; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 14px; display: inline-block; transition: background-color 0.2s;">
           ← Back to Calculators
         </a>
       </div>
@@ -1292,6 +1292,14 @@
     dataTotal.textContent = sampleSize;
     handleResize();
     // Don't automatically generate data at startup
+
+    // Hide back button when loaded in iframe (e.g., PWA wrapper)
+    if (window.self !== window.top) {
+        const backButton = document.getElementById('backButton');
+        if (backButton) {
+            backButton.style.display = 'none';
+        }
+    }
   </script>
 </body>
 </html>

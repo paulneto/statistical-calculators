@@ -20,7 +20,7 @@
             <div class="max-w-7xl mx-auto px-4 py-6">
                 <div class="flex items-center justify-between mb-2">
                     <h1 class="text-2xl font-bold text-white">Proportion Significance Calculator</h1>
-                    <a href="../index.html" style="background-color: #ffffff; color: #2563eb" class="px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition text-sm">
+                    <a href="../index.html" id="backButton" style="background-color: #ffffff; color: #2563eb" class="px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition text-sm">
                         ← Back to Calculators
                     </a>
                 </div>
@@ -340,6 +340,14 @@ Promotional Offers`;
                     
                     resultsBody.appendChild(row);
                 }
+            }
+        }
+
+        // Hide back button when loaded in iframe (e.g., PWA wrapper)
+        if (window.self !== window.top) {
+            const backButton = document.getElementById('backButton');
+            if (backButton) {
+                backButton.style.display = 'none';
             }
         }
     </script>

@@ -91,7 +91,7 @@
                         <div className="max-w-7xl mx-auto px-4 py-6">
                             <div className="flex items-center justify-between mb-2">
                                 <h1 className="text-2xl font-bold text-white">Significance Difference Calculator</h1>
-                                <a href="../index.html" style={{backgroundColor: '#ffffff', color: '#14b8a6'}} className="px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition text-sm">
+                                <a href="../index.html" id="backButton" style={{backgroundColor: '#ffffff', color: '#14b8a6'}} className="px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition text-sm">
                                     ← Back to Calculators
                                 </a>
                             </div>
@@ -242,6 +242,17 @@
         };
 
         ReactDOM.render(<SignificanceCalculator />, document.getElementById('root'));
+
+        // Hide back button when loaded in iframe (e.g., PWA wrapper)
+        if (window.self !== window.top) {
+            // Wait for React to render
+            setTimeout(() => {
+                const backButton = document.getElementById('backButton');
+                if (backButton) {
+                    backButton.style.display = 'none';
+                }
+            }, 100);
+        }
     </script>
 </body>
 </html>
