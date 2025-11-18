@@ -1,0 +1,46 @@
+[
+  {
+    "id": "welcome-2025",
+    "enabled": true,
+    "type": "info",
+    "icon": "👋",
+    "title": "Welcome to StatCalc PWA!",
+    "message": "Try the new Progressive Web App for a better mobile experience. Install it to your home screen for offline access to all calculators.",
+    "link": "",
+    "linkText": "",
+    "dismissible": true
+  },
+  {
+    "id": "new-calculators",
+    "enabled": false,
+    "type": "success",
+    "icon": "✨",
+    "title": "5 New Calculators Added",
+    "message": "Check out our latest additions: Multiple Regression, Logistic Regression, Cluster Analysis, Post-Hoc Tests, and Sample Size Calculator.",
+    "link": "https://github.com/paulneto/statistical-calculators#readme",
+    "linkText": "Learn More",
+    "dismissible": true
+  },
+  {
+    "id": "maintenance-notice",
+    "enabled": false,
+    "type": "warning",
+    "icon": "⚠️",
+    "title": "Scheduled Maintenance",
+    "message": "GitHub Pages will undergo maintenance on [DATE]. The app will continue to work offline if you've used it before.",
+    "link": "",
+    "linkText": "",
+    "dismissible": false
+  },
+  {
+    "id": "special-offer",
+    "enabled": false,
+    "type": "promo",
+    "icon": "🎉",
+    "title": "Special Offer: Premium Course",
+    "message": "Learn advanced statistical analysis with our comprehensive online course. Limited time 50% discount for StatCalc users!",
+    "link": "https://example.com/course",
+    "linkText": "Get Discount",
+    "dismissible": true
+  }
+]
