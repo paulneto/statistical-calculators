@@ -460,11 +460,19 @@
     </style>
 </head>
 <body>
-    <div class="dashboard-container">
-        <div class="dashboard-header">
-            <h2>Interactive Correlation Dashboard</h2>
+    <div style="background: linear-gradient(to right, #06b6d4, #0891b2)" class="text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-6" style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+                <h1 style="font-size: 24px; font-weight: 700; margin: 0 0 4px 0; color: white;">Interactive Correlation Simulator</h1>
+                <p style="font-size: 14px; font-weight: 500; margin: 0; color: white; opacity: 0.95;">Explore how correlation affects scatter plots, regression lines, and shared variance</p>
+            </div>
+            <a href="../index.html" style="background-color: #ffffff; color: #06b6d4; padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 14px; text-decoration: none; white-space: nowrap;">
+                ← Back to Calculators
+            </a>
         </div>
-        
+    </div>
+
+    <div class="dashboard-container">
         <div class="dashboard-controls">
             <div class="slider-container">
                 <label for="correlation-slider">Correlation <span id="correlation-value" class="correlation-value">0.63</span></label>
@@ -612,7 +620,76 @@
         let scatterData = [];
         let scatterChart;
         let regressionLine = { slope: 0.38, intercept: 62.20 };
-        
+
+        // ---- t-distribution CDF approximation for real p-values ----
+        // Uses the regularized incomplete beta function approach
+        function betacf(x, a, b) {
+            const maxIter = 200;
+            const eps = 3e-12;
+            const qab = a + b;
+            const qap = a + 1;
+            const qam = a - 1;
+            let c = 1;
+            let d = 1 - qab * x / qap;
+            if (Math.abs(d) < 1e-30) d = 1e-30;
+            d = 1 / d;
+            let h = d;
+            for (let m = 1; m <= maxIter; m++) {
+                const m2 = 2 * m;
+                let aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+                d = 1 + aa * d;
+                if (Math.abs(d) < 1e-30) d = 1e-30;
+                c = 1 + aa / c;
+                if (Math.abs(c) < 1e-30) c = 1e-30;
+                d = 1 / d;
+                h *= d * c;
+                aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+                d = 1 + aa * d;
+                if (Math.abs(d) < 1e-30) d = 1e-30;
+                c = 1 + aa / c;
+                if (Math.abs(c) < 1e-30) c = 1e-30;
+                d = 1 / d;
+                const del = d * c;
+                h *= del;
+                if (Math.abs(del - 1) < eps) break;
+            }
+            return h;
+        }
+
+        function lnGamma(x) {
+            const cof = [76.18009172947146, -86.50532032941677, 24.01409824083091,
+                         -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+            let y = x, tmp = x + 5.5;
+            tmp -= (x + 0.5) * Math.log(tmp);
+            let ser = 1.000000000190015;
+            for (let j = 0; j < 6; j++) ser += cof[j] / ++y;
+            return -tmp + Math.log(2.5066282746310005 * ser / x);
+        }
+
+        function ibeta(x, a, b) {
+            if (x <= 0) return 0;
+            if (x >= 1) return 1;
+            const bt = Math.exp(lnGamma(a + b) - lnGamma(a) - lnGamma(b) + a * Math.log(x) + b * Math.log(1 - x));
+            if (x < (a + 1) / (a + b + 2)) {
+                return bt * betacf(x, a, b) / a;
+            } else {
+                return 1 - bt * betacf(1 - x, b, a) / b;
+            }
+        }
+
+        function tCDF(t, df) {
+            const x = df / (df + t * t);
+            return 1 - 0.5 * ibeta(x, df / 2, 0.5);
+        }
+
+        function correlationPValue(r, n) {
+            if (n <= 2) return 1;
+            if (Math.abs(r) >= 1) return 0;
+            const t = r * Math.sqrt((n - 2) / (1 - r * r));
+            const p = 2 * (1 - tCDF(Math.abs(t), n - 2));
+            return p;
+        }
+
         // Initialize the dashboard
         document.addEventListener('DOMContentLoaded', function() {
             // Set up slider
@@ -621,38 +698,33 @@
                 updateSlider();
                 generateData(parseFloat(this.value));
             });
-            
+
             // Set up buttons
             document.getElementById('add-point').addEventListener('click', addRandomPoint);
             document.getElementById('remove-point').addEventListener('click', removeLastPoint);
             document.getElementById('regenerate').addEventListener('click', function() {
                 generateData(parseFloat(slider.value));
             });
-            
+
             // Initial data generation
             generateData(0.63);
-            
+
             // Initialize interpretation
             updateInterpretation(0.63);
-            
-            // Make sure the chart is clickable initially
-            setTimeout(() => {
-                enableChartClicking();
-            }, 500);
         });
-        
+
         // Update interpretation text and visual elements
         function updateInterpretation(correlationValue) {
             // Calculate position percentage for scale indicator (convert from -1...1 to 0%...100%)
             const percentage = ((correlationValue + 1) / 2) * 100;
-            
+
             // Update indicator position
             document.getElementById('scale-indicator').style.left = percentage + '%';
-            
+
             // Set interpretation text based on correlation strength
             let interpretationText = '';
             const absCorr = Math.abs(correlationValue);
-            
+
             if (absCorr < 0.1) {
                 interpretationText = 'No/negligible correlation';
             } else if (absCorr < 0.3) {
@@ -666,19 +738,19 @@
             } else {
                 interpretationText = correlationValue < 0 ? 'Very strong negative correlation' : 'Very strong positive correlation';
             }
-            
+
             document.getElementById('correlation-interpretation').textContent = interpretationText;
         }
-        
+
         // Update the slider when value changes
         function updateSlider() {
             const value = parseFloat(document.getElementById('correlation-slider').value);
             document.getElementById('correlation-value').textContent = value.toFixed(2);
-            
+
             // Update scale indicator based on correlation value
             updateInterpretation(value);
         }
-        
+
         // Generate correlated data
         function generateData(targetCorrelation) {
             // Set means and standard deviations
@@ -686,23 +758,23 @@
             const meanY = 100;
             const sdX = 5;
             const sdY = 3;
-            
+
             // Generate correlated data
             const newData = [];
             const n = 50; // Number of data points
-            
+
             // Generate with controlled correlation
             for (let i = 0; i < n; i++) {
                 // Generate correlated normal variables
                 const u1 = Math.random();
                 const u2 = Math.random();
-                
+
                 const z1 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
                 const z2 = targetCorrelation * z1 + Math.sqrt(1 - targetCorrelation * targetCorrelation) * Math.sqrt(-2 * Math.log(u1)) * Math.sin(2 * Math.PI * u2);
-                
+
                 const x = z1 * sdX + meanX;
                 const y = z2 * sdY + meanY;
-                
+
                 newData.push({
                     x: x,
                     y: y,
@@ -710,256 +782,320 @@
                     randomAdded: false
                 });
             }
-            
+
             scatterData = newData;
-            
+
             // Calculate regression line
             calculateRegressionLine();
-            
-            // Enable click-to-add functionality
-            enableChartClicking();
-            
+
             // Update chart
             updateChart();
-            
+
             // Update statistics
             calculateStatistics();
         }
-        
+
         // Calculate regression line
         function calculateRegressionLine() {
             if (scatterData.length === 0) return;
-            
+
             const n = scatterData.length;
-            
+
             const sumX = scatterData.reduce((acc, point) => acc + point.x, 0);
             const sumY = scatterData.reduce((acc, point) => acc + point.y, 0);
             const sumXY = scatterData.reduce((acc, point) => acc + point.x * point.y, 0);
             const sumXX = scatterData.reduce((acc, point) => acc + point.x * point.x, 0);
-            
+
             const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
             const intercept = (sumY - slope * sumX) / n;
-            
+
             regressionLine = {
                 slope: slope,
                 intercept: intercept
             };
         }
-        
+
+        // Venn diagram animation state
+        let vennAnimId = null;
+        let vennCurrentCx1 = 80;
+        let vennCurrentCx2 = 120;
+
+        // Update Venn diagram circles based on R-squared (smooth JS animation)
+        function updateVennDiagram(r2) {
+            const svg = document.getElementById('venn-svg');
+            const circles = svg.querySelectorAll('circle');
+            const textEl = document.getElementById('shared-variance-text');
+
+            // Separation: r2=0 -> circles far apart (no overlap), r2=1 -> fully overlapping
+            const separation = 60 * (1 - r2);
+            const targetCx1 = 100 - separation;
+            const targetCx2 = 100 + separation;
+
+            const sharedVariance = Math.round(r2 * 100);
+            textEl.textContent = `${sharedVariance}%`;
+
+            if (vennAnimId) cancelAnimationFrame(vennAnimId);
+
+            function animate() {
+                vennCurrentCx1 += (targetCx1 - vennCurrentCx1) * 0.18;
+                vennCurrentCx2 += (targetCx2 - vennCurrentCx2) * 0.18;
+
+                circles[0].setAttribute('cx', vennCurrentCx1);
+                circles[1].setAttribute('cx', vennCurrentCx2);
+
+                if (Math.abs(targetCx1 - vennCurrentCx1) > 0.1) {
+                    vennAnimId = requestAnimationFrame(animate);
+                } else {
+                    circles[0].setAttribute('cx', targetCx1);
+                    circles[1].setAttribute('cx', targetCx2);
+                    vennCurrentCx1 = targetCx1;
+                    vennCurrentCx2 = targetCx2;
+                    vennAnimId = null;
+                }
+            }
+
+            vennAnimId = requestAnimationFrame(animate);
+        }
+
         // Calculate statistics
         function calculateStatistics() {
             if (scatterData.length === 0) return;
-            
+
             // Extract x and y values
             const xs = scatterData.map(point => point.x);
             const ys = scatterData.map(point => point.y);
-            
+            const n = xs.length;
+
             // Calculate means
-            const meanX = xs.reduce((a, b) => a + b, 0) / xs.length;
-            const meanY = ys.reduce((a, b) => a + b, 0) / ys.length;
-            
-            // Calculate standard deviations
-            const sdX = Math.sqrt(xs.map(x => Math.pow(x - meanX, 2)).reduce((a, b) => a + b, 0) / xs.length);
-            const sdY = Math.sqrt(ys.map(y => Math.pow(y - meanY, 2)).reduce((a, b) => a + b, 0) / ys.length);
-            
+            const meanX = xs.reduce((a, b) => a + b, 0) / n;
+            const meanY = ys.reduce((a, b) => a + b, 0) / n;
+
+            // Calculate sample standard deviations (n-1 divisor)
+            const sdX = Math.sqrt(xs.map(x => Math.pow(x - meanX, 2)).reduce((a, b) => a + b, 0) / (n - 1));
+            const sdY = Math.sqrt(ys.map(y => Math.pow(y - meanY, 2)).reduce((a, b) => a + b, 0) / (n - 1));
+
             // Calculate Pearson correlation
             let numerator = 0;
             let denominatorX = 0;
             let denominatorY = 0;
-            
-            for (let i = 0; i < xs.length; i++) {
+
+            for (let i = 0; i < n; i++) {
                 numerator += (xs[i] - meanX) * (ys[i] - meanY);
                 denominatorX += Math.pow(xs[i] - meanX, 2);
                 denominatorY += Math.pow(ys[i] - meanY, 2);
             }
-            
+
             const pearsonR = numerator / Math.sqrt(denominatorX * denominatorY);
-            
+
             // Calculate R-squared
             const r2 = Math.pow(pearsonR, 2);
-            
-            // Calculate Spearman rank correlation
+
+            // Calculate Spearman rank correlation (with proper tie handling)
             const rankedXs = rankData(xs);
             const rankedYs = rankData(ys);
-            
+
             let sumDiffSquared = 0;
             for (let i = 0; i < rankedXs.length; i++) {
                 sumDiffSquared += Math.pow(rankedXs[i] - rankedYs[i], 2);
             }
-            
-            const spearman = 1 - (6 * sumDiffSquared) / (scatterData.length * (Math.pow(scatterData.length, 2) - 1));
-            
-            // Generate p-value based on correlation strength (simplification)
-            let pValue;
-            if (Math.abs(pearsonR) > 0.7) {
-                pValue = (Math.random() * 0.001).toFixed(4);
-            } else if (Math.abs(pearsonR) > 0.5) {
-                pValue = (Math.random() * 0.01).toFixed(4);
-            } else if (Math.abs(pearsonR) > 0.3) {
-                pValue = (Math.random() * 0.05).toFixed(4);
+
+            const spearman = 1 - (6 * sumDiffSquared) / (n * (n * n - 1));
+
+            // Calculate real p-value using t-distribution
+            const pValue = correlationPValue(pearsonR, n);
+            let pValueStr;
+            if (pValue < 0.0001) {
+                pValueStr = '< 0.0001';
             } else {
-                pValue = (0.05 + Math.random() * 0.5).toFixed(4);
+                pValueStr = pValue.toFixed(4);
             }
-            
+
             // Update UI with calculated statistics
             document.getElementById('pearson-r').textContent = pearsonR.toFixed(2);
             document.getElementById('r-squared').textContent = r2.toFixed(2);
             document.getElementById('spearman').textContent = spearman.toFixed(2);
-            document.getElementById('p-value').textContent = pValue;
+            document.getElementById('p-value').textContent = pValueStr;
             document.getElementById('mean-x').textContent = meanX.toFixed(2);
             document.getElementById('mean-y').textContent = meanY.toFixed(2);
             document.getElementById('sd-x').textContent = sdX.toFixed(2);
             document.getElementById('sd-y').textContent = sdY.toFixed(2);
             document.getElementById('regression-equation').textContent = `y = ${regressionLine.intercept.toFixed(2)} + ${regressionLine.slope.toFixed(2)}*x`;
-            document.getElementById('n-count').textContent = scatterData.length;
-            
-            // Update shared variance
-            const sharedVariance = Math.round(r2 * 100);
-            document.getElementById('shared-variance-text').textContent = `${sharedVariance}%`;
-            
+            document.getElementById('n-count').textContent = n;
+
+            // Update Venn diagram with animated circles
+            updateVennDiagram(r2);
+
             // Update correlation value in the display at the top
             document.getElementById('correlation-value').textContent = pearsonR.toFixed(2);
-            
+
             // Update interpretation
             updateInterpretation(pearsonR);
         }
-        
-        // Helper function to rank data for Spearman correlation
+
+        // Helper function to rank data for Spearman correlation (handles ties with average ranks)
         function rankData(arr) {
-            const sorted = [...arr].sort((a, b) => a - b);
-            return arr.map(x => sorted.indexOf(x) + 1);
+            const n = arr.length;
+            // Create index-value pairs and sort by value
+            const indexed = arr.map((val, i) => ({ val, i }));
+            indexed.sort((a, b) => a.val - b.val);
+
+            const ranks = new Array(n);
+            let i = 0;
+            while (i < n) {
+                // Find the end of the group of tied values
+                let j = i;
+                while (j < n - 1 && indexed[j + 1].val === indexed[i].val) {
+                    j++;
+                }
+                // Average rank for this group: ranks are 1-based
+                const avgRank = (i + 1 + j + 1) / 2;
+                for (let k = i; k <= j; k++) {
+                    ranks[indexed[k].i] = avgRank;
+                }
+                i = j + 1;
+            }
+            return ranks;
         }
-        
+
         // Add random data point
         function addRandomPoint() {
             if (scatterData.length === 0) return;
-            
+
             // Get current correlation
             const correlation = parseFloat(document.getElementById('pearson-r').textContent);
-            
+
             // Get means and standard deviations
             const meanX = parseFloat(document.getElementById('mean-x').textContent);
             const meanY = parseFloat(document.getElementById('mean-y').textContent);
             const sdX = parseFloat(document.getElementById('sd-x').textContent);
             const sdY = parseFloat(document.getElementById('sd-y').textContent);
-            
+
             // Generate a new point with similar correlation
             const u1 = Math.random();
             const u2 = Math.random();
-            
+
             const z1 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
             const z2 = correlation * z1 + Math.sqrt(1 - correlation * correlation) * Math.sqrt(-2 * Math.log(u1)) * Math.sin(2 * Math.PI * u2);
-            
+
             const x = z1 * sdX + meanX;
             const y = z2 * sdY + meanY;
-            
-            addPoint(x, y, false, true); // Add flag for random points
+
+            addPoint(x, y, false, true);
         }
-        
+
         // Add a point at specific coordinates
         function addPoint(x, y, isClickAdded = false, isRandomAdded = false) {
-            // Add color information for user-added points
-            scatterData.push({ 
-                x, 
+            scatterData.push({
+                x,
                 y,
                 userAdded: isClickAdded,
                 randomAdded: isRandomAdded
             });
-            
+
             // Update regression line
             calculateRegressionLine();
-            
+
             // Update chart
             updateChart();
-            
+
             // Update statistics
             calculateStatistics();
         }
-        
+
         // Remove last data point
         function removeLastPoint() {
             if (scatterData.length > 0) {
                 scatterData.pop();
-                
+
                 // Update regression line
                 calculateRegressionLine();
-                
+
                 // Update chart
                 updateChart();
-                
+
                 // Update statistics
                 calculateStatistics();
             }
         }
-        
-        // Update scatter chart with new data
+
+        // Update scatter chart - creates once, then updates in-place to prevent flashing
         function updateChart() {
-            const ctx = document.getElementById('scatterChart').getContext('2d');
-            
             // Split data into original, user-added, and random-added points
             const originalPoints = scatterData.filter(point => !point.userAdded && !point.randomAdded);
             const userAddedPoints = scatterData.filter(point => point.userAdded);
             const randomAddedPoints = scatterData.filter(point => point.randomAdded);
-            
-            // Prepare chart data
-            const chartData = {
-                datasets: [
-                    {
-                        label: 'Original Data Points',
-                        data: originalPoints,
-                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        pointRadius: 6,
-                        pointHoverRadius: 8
-                    },
-                    {
-                        label: 'User Added Points',
-                        data: userAddedPoints,
-                        backgroundColor: 'rgba(255, 99, 132, 0.6)',
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        pointRadius: 7,
-                        pointHoverRadius: 9
-                    },
-                    {
-                        label: 'Random Added Points',
-                        data: randomAddedPoints,
-                        backgroundColor: 'rgba(25, 25, 112, 0.7)',
-                        borderColor: 'rgba(25, 25, 112, 1)',
-                        pointRadius: 7,
-                        pointHoverRadius: 9
-                    },
-                    {
-                        label: 'Regression Line',
-                        data: getRegressionLinePoints(),
-                        showLine: true,
-                        fill: false,
-                        borderColor: 'rgba(0, 0, 0, 1)',
-                        pointRadius: 0,
-                        borderWidth: 2
-                    }
-                ]
-            };
-            
+
             // Get min and max for chart axis
             const xValues = scatterData.map(point => point.x);
             const yValues = scatterData.map(point => point.y);
-            
+
             const minX = Math.min(...xValues) - 5;
             const maxX = Math.max(...xValues) + 5;
             const minY = Math.min(...yValues) - 5;
             const maxY = Math.max(...yValues) + 5;
-            
-            // Chart configuration
+
+            if (scatterChart) {
+                // Update existing chart data in-place (no flashing)
+                scatterChart.data.datasets[0].data = originalPoints;
+                scatterChart.data.datasets[1].data = userAddedPoints;
+                scatterChart.data.datasets[2].data = randomAddedPoints;
+                scatterChart.data.datasets[3].data = getRegressionLinePoints();
+
+                scatterChart.options.scales.x.min = minX;
+                scatterChart.options.scales.x.max = maxX;
+                scatterChart.options.scales.y.min = minY;
+                scatterChart.options.scales.y.max = maxY;
+
+                scatterChart.update('none');
+                return;
+            }
+
+            // First time only: create the chart
+            const ctx = document.getElementById('scatterChart').getContext('2d');
+
             const config = {
                 type: 'scatter',
-                data: chartData,
+                data: {
+                    datasets: [
+                        {
+                            label: 'Original Data Points',
+                            data: originalPoints,
+                            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            pointRadius: 6,
+                            pointHoverRadius: 8
+                        },
+                        {
+                            label: 'User Added Points',
+                            data: userAddedPoints,
+                            backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            pointRadius: 7,
+                            pointHoverRadius: 9
+                        },
+                        {
+                            label: 'Random Added Points',
+                            data: randomAddedPoints,
+                            backgroundColor: 'rgba(25, 25, 112, 0.7)',
+                            borderColor: 'rgba(25, 25, 112, 1)',
+                            pointRadius: 7,
+                            pointHoverRadius: 9
+                        },
+                        {
+                            label: 'Regression Line',
+                            data: getRegressionLinePoints(),
+                            showLine: true,
+                            fill: false,
+                            borderColor: 'rgba(0, 0, 0, 1)',
+                            pointRadius: 0,
+                            borderWidth: 2
+                        }
+                    ]
+                },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    animation: {
-                        duration: 800,
-                        easing: 'easeOutQuart'
-                    },
+                    animation: false,
                     scales: {
                         x: {
                             type: 'linear',
@@ -1024,73 +1160,49 @@
                     }
                 }
             };
-            
-            // Destroy existing chart if it exists
-            if (scatterChart) {
-                scatterChart.destroy();
-            }
-            
-            // Create new chart
+
             scatterChart = new Chart(ctx, config);
-            
-            // Enable click-to-add functionality
-            enableChartClicking();
+
+            // Set up click-to-add once on the canvas
+            document.getElementById('scatterChart').addEventListener('click', handleCanvasClick);
         }
-        
+
         // Get regression line points for the chart
         function getRegressionLinePoints() {
             if (scatterData.length === 0) return [];
-            
+
             // Find min and max x values
             const xValues = scatterData.map(point => point.x);
             const minX = Math.min(...xValues);
             const maxX = Math.max(...xValues);
-            
+
             // Create line with two points
             return [
                 { x: minX, y: regressionLine.intercept + regressionLine.slope * minX },
                 { x: maxX, y: regressionLine.intercept + regressionLine.slope * maxX }
             ];
         }
-        
-        // Enable clicking on chart to add points
-        function enableChartClicking() {
-            const canvas = document.getElementById('scatterChart');
-            
-            // Remove any existing click listeners to avoid duplicates
-            canvas.removeEventListener('click', handleCanvasClick);
-            
-            // Add click listener with a slight delay to ensure chart is fully rendered
-            setTimeout(() => {
-                canvas.addEventListener('click', handleCanvasClick);
-            }, 100);
-        }
-        
+
         // Handle clicks on the chart canvas
         function handleCanvasClick(event) {
-            // Make sure we have a chart
             if (!scatterChart) return;
-            
+
             // Get chart area coordinates
             const rect = event.target.getBoundingClientRect();
             const x = event.clientX - rect.left;
             const y = event.clientY - rect.top;
-            
+
             // Make sure the click is within the chart area
             const chartArea = scatterChart.chartArea;
-            if (x < chartArea.left || x > chartArea.right || 
+            if (x < chartArea.left || x > chartArea.right ||
                 y < chartArea.top || y > chartArea.bottom) {
-                return; // Click outside the chart area
+                return;
             }
-            
+
             // Convert pixel coordinates to data values
-            const xScale = scatterChart.scales.x;
-            const yScale = scatterChart.scales.y;
-            
-            const dataX = xScale.getValueForPixel(x);
-            const dataY = yScale.getValueForPixel(y);
-            
-            // Add the new point with flag indicating it was user-clicked
+            const dataX = scatterChart.scales.x.getValueForPixel(x);
+            const dataY = scatterChart.scales.y.getValueForPixel(y);
+
             addPoint(dataX, dataY, true);
         }
     </script>
